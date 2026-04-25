@@ -30,8 +30,9 @@ const MID_SIGNALS = [
   "disappointed", "missing feature", "lacks",
 ];
 const LOW_SIGNALS = [
-  "anyone else", "how do you", "what do you use",
-  "thoughts on", "review", "experience with",
+  "anyone", "how do", "what do",
+  "thoughts", "review", "experience",
+  "use", "best", "top",
 ];
 const HIGH_VALUE_SUBS = [
   "startups", "entrepreneur", "somebodymakethis",
@@ -40,7 +41,8 @@ const HIGH_VALUE_SUBS = [
 
 function scoreResult(item: { title?: string; snippet?: string; link?: string }): { score: number; matched: string[] } {
   const combined = `${item.title || ""} ${item.snippet || ""}`.toLowerCase();
-  let score = 0;
+  // Base score: every Reddit result counts as a real discussion
+  let score = 3;
   const matched = new Set<string>();
   for (const w of HIGH_SIGNALS) {
     if (combined.includes(w)) { score += 3; matched.add(w); }
@@ -52,7 +54,7 @@ function scoreResult(item: { title?: string; snippet?: string; link?: string }):
     if (combined.includes(w)) { score += 1; matched.add(w); }
   }
   const sub = (extractSubreddit(item.link || "").replace(/^r\//, "")).toLowerCase();
-  if (sub && HIGH_VALUE_SUBS.some((s) => sub.includes(s))) score += 2;
+  if (sub && HIGH_VALUE_SUBS.some((s) => sub.includes(s.toLowerCase()))) score += 3;
   return { score, matched: [...matched] };
 }
 
