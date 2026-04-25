@@ -108,8 +108,8 @@ Deno.serve(async (req) => {
 
   try {
     const { results = [], keyword, appIdea, language = "en" } = await req.json();
-    const API_KEY = Deno.env.get("MODELROUTER_API_KEY");
-    if (!API_KEY) throw new Error("MODELROUTER_API_KEY not configured");
+    const API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const resultsText = results.length
       ? results
@@ -185,7 +185,7 @@ Rules:
 - sentiment numbers MUST sum to 100
 - Provide 4-5 pain points, 3 app opportunities, 2-3 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches`;
 
-    const resp = await fetch(MODEL_ROUTER_URL, {
+    const resp = await fetch(AI_GATEWAY_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${API_KEY}`,
@@ -193,7 +193,6 @@ Rules:
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 3000,
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userPrompt },
@@ -203,16 +202,16 @@ Rules:
 
     if (!resp.ok) {
       const t = await resp.text();
-      console.error("Model router error:", resp.status, t);
+      console.error("AI gateway error:", resp.status, t);
       if (resp.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (resp.status === 401 || resp.status === 403) {
-        return new Response(JSON.stringify({ error: "Invalid API key for the model router." }), {
-          status: resp.status,
+      if (resp.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }), {
+          status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
