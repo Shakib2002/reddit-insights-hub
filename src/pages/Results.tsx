@@ -718,15 +718,21 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 5. Reddit Evidence */}
-        <section id="evidence" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            Reddit Evidence
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Real posts retrieved by the search — proof the analysis is grounded in actual
-            discussions.
-          </p>
+        <section id="evidence" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-semibold section-accent flex items-center">
+                Reddit Evidence
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Real posts retrieved by the search — proof the analysis is grounded in actual
+                discussions.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {redditPosts.length} posts
+            </span>
+          </div>
 
           {redditPosts.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
