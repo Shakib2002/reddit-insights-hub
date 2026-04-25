@@ -66,9 +66,15 @@ const sizeChipVariant = (s: Niche["size"]) => {
 };
 
 const avgSignalLabel = (avg: number): "High" | "Medium" | "Low" => {
-  if (avg >= 6) return "High";
-  if (avg >= 3) return "Medium";
+  if (avg >= 4) return "High";
+  if (avg >= 2) return "Medium";
   return "Low";
+};
+
+const sizePillClass = (s: Niche["size"]) => {
+  if (s === "Large") return "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300";
+  if (s === "Medium") return "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
+  return "bg-muted text-muted-foreground";
 };
 
 const Bar = ({ label, pct, color }: { label: string; pct: number; color: string }) => (
