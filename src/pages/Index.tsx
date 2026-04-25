@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { toFriendlyError } from "@/lib/errors";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck, Target, DollarSign, CheckCircle2, Zap, Users, BarChart3, ArrowRight, Heart } from "lucide-react";
@@ -141,7 +143,11 @@ async function runOneSearch(opts: {
       },
     },
   );
-  if (redditErr) throw redditErr;
+  if (redditErr) {
+    const err = new Error((redditErr as any).message ?? "Reddit fetch failed");
+    (err as any)._stage = "reddit";
+    throw err;
+  }
 
   const fetched = redditData?.results?.length ?? 0;
   opts.onStep?.("score", `Merged & ranked ${fetched} unique posts`);
@@ -160,9 +166,11 @@ async function runOneSearch(opts: {
   );
   if (analyzeErr) {
     const msg = (analyzeErr as any).context?.body
-      ? JSON.parse((analyzeErr as any).context.body).error
+      ? (() => { try { return JSON.parse((analyzeErr as any).context.body).error; } catch { return analyzeErr.message; } })()
       : analyzeErr.message;
-    throw new Error(msg);
+    const err = new Error(msg);
+    (err as any)._stage = "ai";
+    throw err;
   }
 
   return {
@@ -206,7 +214,11 @@ async function runValidate(opts: {
       },
     },
   );
-  if (redditErr) throw redditErr;
+  if (redditErr) {
+    const err = new Error((redditErr as any).message ?? "Reddit fetch failed");
+    (err as any)._stage = "reddit";
+    throw err;
+  }
 
   const fetched = redditData?.results?.length ?? 0;
   opts.onStep?.("score", `Merged & ranked ${fetched} unique posts`);
@@ -225,9 +237,11 @@ async function runValidate(opts: {
   );
   if (validateErr) {
     const msg = (validateErr as any).context?.body
-      ? JSON.parse((validateErr as any).context.body).error
+      ? (() => { try { return JSON.parse((validateErr as any).context.body).error; } catch { return validateErr.message; } })()
       : validateErr.message;
-    throw new Error(msg);
+    const err = new Error(msg);
+    (err as any)._stage = "validate";
+    throw err;
   }
 
   return {
@@ -327,10 +341,19 @@ const Index = () => {
       navigate("/results");
     } catch (e) {
       console.error(e);
+      const stage = (e as any)?._stage as any;
+      const friendly = toFriendlyError(e, stage);
       toast({
-        title: "Analysis failed",
-        description: e instanceof Error ? e.message : "Please try again.",
+        title: friendly.title,
+        description: friendly.hint
+          ? `${friendly.description} ${friendly.hint}`
+          : friendly.description,
         variant: "destructive",
+        action: friendly.retryable ? (
+          <ToastAction altText="Retry" onClick={() => runQuickSearch(topic)}>
+            Retry
+          </ToastAction>
+        ) : undefined,
       });
       setLoading(false);
     }
@@ -444,10 +467,22 @@ const Index = () => {
       }
     } catch (e) {
       console.error(e);
+      const stage = (e as any)?._stage ?? (validateMode ? "validate" : "unknown");
+      const friendly = toFriendlyError(e, stage);
       toast({
-        title: validateMode ? "Validation failed" : "Analysis failed",
-        description: e instanceof Error ? e.message : "Please try again.",
+        title: friendly.title,
+        description: friendly.hint
+          ? `${friendly.description} ${friendly.hint}`
+          : friendly.description,
         variant: "destructive",
+        action: friendly.retryable ? (
+          <ToastAction
+            altText="Retry"
+            onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+          >
+            Retry
+          </ToastAction>
+        ) : undefined,
       });
       setLoading(false);
     }
