@@ -911,6 +911,17 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           )}
         </section>
 
+        {/* 8b. Revenue Models (NEW) */}
+        {analysis.revenueModels && analysis.revenueModels.length > 0 && (
+          <RevenueModelsSection models={analysis.revenueModels} />
+        )}
+
+        {/* 8c. Competitor Intelligence (NEW) */}
+        <CompetitorIntelSection
+          keyword={inputs.keyword}
+          existingResults={redditPosts}
+        />
+
         {/* 9. Niche Opportunities — grid */}
         <section id="niches" className="fade-in scroll-mt-32">
           <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
