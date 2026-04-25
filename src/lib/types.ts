@@ -69,6 +69,7 @@ export interface SearchInputs {
   appIdea: string;
   subreddit: string;
   numResults?: number;
+  loadedMore?: boolean;
   effectiveSubreddits?: string[];
   language?: ReportLanguage;
   rationale?: SearchRationale;
