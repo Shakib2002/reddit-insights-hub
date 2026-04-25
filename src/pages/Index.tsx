@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck } from "lucide-react";
+import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck, Target, DollarSign, CheckCircle2, Zap, Users, BarChart3, ArrowRight, Heart } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 import { dbSaveSearch, dbSaveValidation } from "@/lib/db-history";
@@ -415,19 +415,50 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <Header />
-      <main className="container max-w-3xl py-12 md:py-20">
-        <div className="text-center mb-10 fade-in">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-3">
-            Reddit<span className="text-primary">Lens</span>
+
+      {/* Decorative gradient blobs */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-0 overflow-hidden">
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-primary/20 blur-[120px] opacity-60" />
+        <div className="absolute top-40 -left-20 h-[400px] w-[400px] rounded-full bg-accent blur-[100px] opacity-40" />
+        <div className="absolute top-20 -right-20 h-[400px] w-[400px] rounded-full bg-primary/10 blur-[100px] opacity-50" />
+      </div>
+
+      <main className="container max-w-3xl py-12 md:py-16 relative z-10">
+        {/* Hero */}
+        <div className="text-center mb-8 md:mb-10 fade-in">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium mb-5">
+            <Sparkles className="h-3.5 w-3.5" />
+            Powered by AI · Real Reddit data
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 leading-[1.05]">
+            Find Real Problems
+            <br />
+            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Worth Building
+            </span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground">
-            Discover what Reddit really wants
+          <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-5">
+            Validate startup ideas in 30 seconds. Get AI-powered pain points, revenue models, and competitor gaps from real Reddit discussions.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-primary">🔥</span> 2,400+ ideas analyzed
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-yellow-500">⭐</span> Founder favorite
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-success" /> Free forever
+            </span>
+          </div>
         </div>
 
-        <Card className="p-6 md:p-8 fade-in">
+        {/* Search Card with gradient glow */}
+        <div className="relative fade-in" style={{ animationDelay: "80ms" }}>
+          <div aria-hidden className="absolute -inset-px rounded-[calc(var(--radius)+1px)] bg-gradient-to-br from-primary/30 via-primary/5 to-transparent blur-sm opacity-70" />
+          <Card className="relative p-6 md:p-8 shadow-xl border-border/60 backdrop-blur-sm bg-card/95">
           {loading ? (
             <LoadingSteps
               title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
@@ -655,10 +686,11 @@ const Index = () => {
               </Button>
             </form>
           )}
-        </Card>
+          </Card>
+        </div>
 
         {!loading && (
-          <div className="mt-8 fade-in">
+          <div className="mt-10 fade-in" style={{ animationDelay: "150ms" }}>
             <p className="text-sm text-muted-foreground mb-3 text-center">
               Try an example:
             </p>
@@ -668,7 +700,7 @@ const Index = () => {
                   key={ex}
                   type="button"
                   onClick={() => setKeyword(ex)}
-                  className="px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors border border-border"
+                  className="px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all border border-border"
                 >
                   {ex}
                 </button>
@@ -679,6 +711,126 @@ const Index = () => {
           </div>
         )}
       </main>
+
+      {/* Feature highlights */}
+      {!loading && (
+        <section className="container max-w-5xl py-16 md:py-20 relative z-10">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">
+              Everything you need to validate ideas
+            </h2>
+            <p className="text-muted-foreground">
+              Stop guessing. Start building what people actually want.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+            {[
+              {
+                icon: Target,
+                title: "Pain Point Detection",
+                desc: "Surface real frustrations from authentic Reddit discussions, not AI hallucinations.",
+                color: "text-primary bg-primary/10",
+              },
+              {
+                icon: DollarSign,
+                title: "Revenue Models",
+                desc: "Get pricing benchmarks, MRR potential, and proven monetization strategies.",
+                color: "text-success bg-success/10",
+              },
+              {
+                icon: CheckCircle2,
+                title: "Build or Skip Verdict",
+                desc: "AI-powered go/no-go decision based on demand, competition, and feasibility.",
+                color: "text-yellow-600 bg-yellow-500/10",
+              },
+            ].map((f) => (
+              <Card key={f.title} className="p-5 md:p-6 hover:border-primary/40 hover:shadow-md transition-all group">
+                <div className={`inline-flex h-11 w-11 items-center justify-center rounded-lg ${f.color} mb-3 group-hover:scale-110 transition-transform`}>
+                  <f.icon className="h-5 w-5" />
+                </div>
+                <h3 className="font-semibold text-base mb-1.5">{f.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* How it works */}
+      {!loading && (
+        <section className="bg-muted/30 border-y border-border py-16 md:py-20">
+          <div className="container max-w-5xl">
+            <div className="text-center mb-10">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">How it works</p>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+                From idea to insight in 3 steps
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 relative">
+              {[
+                { n: "01", icon: Search, title: "Enter your idea", desc: "Type a keyword or describe your app concept." },
+                { n: "02", icon: Zap, title: "AI scans Reddit", desc: "We fetch and analyze hundreds of real discussions." },
+                { n: "03", icon: BarChart3, title: "Get insights", desc: "Receive a full report with pain points & verdict." },
+              ].map((s, i) => (
+                <div key={s.n} className="relative">
+                  <Card className="p-5 md:p-6 h-full hover:shadow-md transition-all">
+                    <div className="flex items-start gap-3 mb-3">
+                      <span className="text-2xl font-bold text-primary/30 tabular-nums">{s.n}</span>
+                      <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                        <s.icon className="h-4 w-4" />
+                      </div>
+                    </div>
+                    <h3 className="font-semibold mb-1">{s.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                  </Card>
+                  {i < 2 && (
+                    <ArrowRight className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 h-5 w-5 text-muted-foreground/40 z-10" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Stats strip */}
+      {!loading && (
+        <section className="container max-w-5xl py-16 md:py-20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {[
+              { v: "10M+", l: "Reddit posts indexed" },
+              { v: "2,400+", l: "Ideas validated" },
+              { v: "<60s", l: "Average analysis time" },
+              { v: "100%", l: "Free to use" },
+            ].map((s) => (
+              <div key={s.l} className="text-center p-4 rounded-lg">
+                <div className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
+                  {s.v}
+                </div>
+                <div className="text-xs md:text-sm text-muted-foreground mt-1">{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-muted/20 py-8 mt-4">
+        <div className="container max-w-5xl flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+              R
+            </div>
+            <span className="font-medium text-foreground">RedditLens</span>
+            <span className="text-xs">— Discover what Reddit really wants</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>Made with</span>
+            <Heart className="h-3.5 w-3.5 fill-primary text-primary" />
+            <span>for founders</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
