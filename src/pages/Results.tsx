@@ -413,10 +413,12 @@ const Results = () => {
         },
         analysis: analyzeData.analysis,
       };
+      setStep("render", `Building report from ${merged.length} posts`);
       sessionStorage.setItem("redditlens_results", JSON.stringify(updated));
       saveToHistory(updated);
       setData(updated);
       setNumResults(merged.length);
+      setStep("done");
       toast({
         title: "Report updated",
         description: `Re-analyzed with ${merged.length} merged Reddit posts.`,
