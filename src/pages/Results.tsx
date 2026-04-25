@@ -228,13 +228,14 @@ const StatCard = ({
 const PainPointCard = ({ p }: { p: ResultsPayload["analysis"]["painPoints"][number] }) => {
   const [expanded, setExpanded] = useState(false);
   return (
-    <Card
-      className="p-4 md:p-5 border-l-[3px] flex flex-col gap-2"
-      style={{ borderLeftColor: "hsl(var(--destructive))" }}
-    >
-      <h3 className="font-semibold text-base leading-tight">{p.title}</h3>
+    <Card className="pain-card pl-5 pr-4 py-4 md:py-5 flex flex-col gap-2 border-border">
+      <h3 className="font-semibold text-[15px] leading-tight text-foreground">{p.title}</h3>
       <div>
-        <p className={`text-sm text-muted-foreground ${expanded ? "" : "line-clamp-2"}`}>
+        <p
+          className={`text-[13px] text-muted-foreground leading-[1.6] ${
+            expanded ? "" : "line-clamp-2"
+          }`}
+        >
           {p.description}
         </p>
         {p.description && p.description.length > 110 && (
@@ -247,7 +248,7 @@ const PainPointCard = ({ p }: { p: ResultsPayload["analysis"]["painPoints"][numb
           </button>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+      <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-3">
         {p.source &&
           p.source
             .split(/[,\/|]/)
@@ -286,10 +287,9 @@ const PainPointCard = ({ p }: { p: ResultsPayload["analysis"]["painPoints"][numb
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`View "${p.title}" on Reddit (opens in new tab)`}
-            className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors no-print"
+            className="ml-auto inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline no-print"
           >
-            View on Reddit
-            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            View on Reddit →
           </a>
         )}
       </div>
