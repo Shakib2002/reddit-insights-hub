@@ -983,6 +983,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           )}
         </section>
 
+        {/* 10b. Founder-Market Fit (NEW, collapsible) */}
+        <FounderFitSection
+          keyword={inputs.keyword}
+          painPoints={analysis.painPoints}
+          opportunities={analysis.competitorGaps}
+        />
+
         {/* 11. Recommended Subreddits */}
         <section className="fade-in no-print">
           <h2 className="text-xl font-semibold mb-4">Recommended Subreddits</h2>
