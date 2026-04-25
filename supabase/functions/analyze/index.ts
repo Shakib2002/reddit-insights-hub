@@ -247,7 +247,33 @@ Return ONLY this JSON (no prose, no code fences):
   "niches": [
     { "niche": "specific sub-niche keyword phrase searchable on Reddit", "description": "1 sentence on why this niche is underserved", "size": "Large" | "Medium" | "Small" }
   ],
-  "recommendedSubreddits": ["string without r/ prefix"]
+  "recommendedSubreddits": ["string without r/ prefix"],
+  "buildOrSkip": {
+    "verdict": "BUILD IT" | "NEEDS WORK" | "SKIP IT",
+    "reason": "ONE bold sentence explaining the verdict",
+    "confidence": <number 0-100>,
+    "factors": {
+      "marketSize": <0-10>,
+      "painIntensity": <0-10>,
+      "competitionGap": <0-10>,
+      "monetization": <0-10>,
+      "timing": <0-10>
+    }
+  },
+  "trend": {
+    "direction": "Growing" | "Stable" | "Declining",
+    "reason": "one sentence on why this topic is trending in that direction on Reddit"
+  },
+  "revenueModels": [
+    {
+      "type": "Freemium" | "B2B SaaS" | "Marketplace" | "One-time",
+      "name": "short model name",
+      "description": "2 lines on how it works for THIS topic",
+      "mrrRange": "e.g. $2K - $15K/mo",
+      "redditEvidence": "e.g. 12 Reddit users mentioned willingness to pay for this",
+      "recommended": true | false
+    }
+  ]
 }
 
 Rules:
@@ -256,7 +282,10 @@ Rules:
 - You MUST return EXACTLY 4 competitor gaps (5 maximum). Never return fewer than 4. If you cannot find 4 from the data, use your knowledge of the topic to fill in the rest.
 - Return 4 to 6 niche opportunities. Cover a range of sizes: at least one Large, one Medium, one Small.
 - Provide 3 app opportunities, 3-4 personas, and 4-6 recommended subreddits.
-- For each competitor gap, name the SPECIFIC existing tools (like Notion, Trello, Slack, Obsidian) in "affectedTools" — be concrete about which tools fail at what`;
+- For each competitor gap, name the SPECIFIC existing tools (like Notion, Trello, Slack, Obsidian) in "affectedTools" — be concrete about which tools fail at what
+- buildOrSkip: score each factor 0-10 honestly based on the discussions. Verdict logic: avg>=7 BUILD IT, 5-6.9 NEEDS WORK, <5 SKIP IT.
+- trend: judge whether interest in this topic is Growing, Stable, or Declining based on the recency and volume of discussions.
+- revenueModels: return EXACTLY 3 models, each a different type if possible. Mark exactly ONE as recommended:true (the strongest fit).`;
 
     const resp = await fetch(AI_GATEWAY_URL, {
       method: "POST",
