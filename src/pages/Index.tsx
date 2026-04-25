@@ -958,8 +958,11 @@ const Index = () => {
               </Card>
             ))}
           </div>
+          </div>
         </section>
       )}
+
+      {!loading && <div aria-hidden className="h-px section-divider relative z-10" />}
 
       {/* How it works */}
       {!loading && (
@@ -1000,7 +1003,8 @@ const Index = () => {
 
       {/* Stats strip */}
       {!loading && (
-        <section className="container max-w-5xl py-16 md:py-20">
+        <section className="stats-bg py-16 md:py-20 relative z-10">
+          <div className="container max-w-5xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {[
               { v: "10M+", l: "Reddit posts indexed" },
