@@ -49,6 +49,7 @@ const Index = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [numResults, setNumResults] = useState(10);
   const [includeAllContext, setIncludeAllContext] = useState(true);
+  const [language, setLanguage] = useState<"en" | "bn" | "both">("en");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -82,7 +83,7 @@ const Index = () => {
       setStep(2);
       const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
         "analyze",
-        { body: { results: redditData?.results ?? [], keyword, appIdea } },
+        { body: { results: redditData?.results ?? [], keyword, appIdea, language } },
       );
       if (analyzeErr) {
         const msg = (analyzeErr as any).context?.body
@@ -99,6 +100,7 @@ const Index = () => {
           subreddit: subreddit.replace(/^r\//, ""),
           numResults,
           effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
+          language,
         },
         analysis: analyzeData.analysis,
       };
