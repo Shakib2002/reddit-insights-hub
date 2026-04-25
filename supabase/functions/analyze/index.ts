@@ -184,7 +184,10 @@ Return ONLY this JSON (no prose, no code fences):
 
 Rules:
 - sentiment numbers MUST sum to 100
-- Provide 4-5 pain points, 3 app opportunities, 4-5 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches
+- Return 5 to 7 pain points. Each pain point must be from a DIFFERENT angle. Do not repeat similar complaints. Cover separately: usability, pricing, missing features, integration issues, and performance.
+- You MUST return EXACTLY 4 competitor gaps (5 maximum). Never return fewer than 4. If you cannot find 4 from the data, use your knowledge of the topic to fill in the rest.
+- Return 4 to 6 niche opportunities. Cover a range of sizes: at least one Large, one Medium, one Small.
+- Provide 3 app opportunities, 3-4 personas, and 4-6 recommended subreddits.
 - For each competitor gap, name the SPECIFIC existing tools (like Notion, Trello, Slack, Obsidian) in "affectedTools" — be concrete about which tools fail at what`;
 
     const resp = await fetch(AI_GATEWAY_URL, {
