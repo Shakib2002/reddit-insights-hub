@@ -237,9 +237,11 @@ async function runValidate(opts: {
   );
   if (validateErr) {
     const msg = (validateErr as any).context?.body
-      ? JSON.parse((validateErr as any).context.body).error
+      ? (() => { try { return JSON.parse((validateErr as any).context.body).error; } catch { return validateErr.message; } })()
       : validateErr.message;
-    throw new Error(msg);
+    const err = new Error(msg);
+    (err as any)._stage = "validate";
+    throw err;
   }
 
   return {
