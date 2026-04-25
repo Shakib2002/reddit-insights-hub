@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -10,15 +10,15 @@ import {
   ArrowLeft,
   Copy,
   ExternalLink,
-  TrendingUp,
   Loader2,
   Plus,
   Share2,
   Printer,
   Sparkles,
-  Search as SearchIcon,
+  AlertTriangle,
+  MessageSquare,
 } from "lucide-react";
-import type { ResultsPayload, Niche } from "@/lib/types";
+import type { ResultsPayload, Niche, RedditPost } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { saveToHistory } from "@/lib/history";
 import { BlueprintDialog } from "@/components/BlueprintDialog";
@@ -27,19 +27,13 @@ const MAX_RESULTS = 30;
 const RERUN_STEP = 10;
 
 const signalVariant = (s: string) => {
-  if (s === "High") return "bg-primary text-primary-foreground";
-  if (s === "Medium") return "bg-accent text-accent-foreground";
-  return "bg-muted text-muted-foreground";
-};
-
-const sizeVariant = (s: Niche["size"]) => {
-  if (s === "Large") return "bg-primary/15 text-primary border-primary/30";
-  if (s === "Medium") return "bg-accent text-accent-foreground border-accent";
+  if (s === "High") return "bg-primary text-primary-foreground border-transparent";
+  if (s === "Medium")
+    return "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
   return "bg-muted text-muted-foreground border-border";
 };
 
 const intentVariant = (s: string) => {
-  // Dark orange for High, yellow for Medium, gray for Low
   if (s === "High") return "bg-primary text-primary-foreground border-transparent";
   if (s === "Medium")
     return "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
@@ -54,13 +48,18 @@ const payVariant = (s: string) => {
   return "bg-muted text-muted-foreground border-border";
 };
 
-const SentimentBars = ({ s }: { s: ResultsPayload["analysis"]["sentiment"] }) => (
-  <div className="space-y-2">
-    <Bar label="Positive" pct={s.positive} color="hsl(var(--success))" />
-    <Bar label="Neutral" pct={s.neutral} color="hsl(var(--muted-foreground))" />
-    <Bar label="Negative" pct={s.negative} color="hsl(var(--destructive))" />
-  </div>
-);
+const sizeChipVariant = (s: Niche["size"]) => {
+  if (s === "Large") return "bg-primary/15 text-primary border-primary/30";
+  if (s === "Medium")
+    return "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
+  return "bg-muted text-muted-foreground border-border";
+};
+
+const avgSignalLabel = (avg: number): "High" | "Medium" | "Low" => {
+  if (avg >= 6) return "High";
+  if (avg >= 3) return "Medium";
+  return "Low";
+};
 
 const Bar = ({ label, pct, color }: { label: string; pct: number; color: string }) => (
   <div>
@@ -77,6 +76,89 @@ const Bar = ({ label, pct, color }: { label: string; pct: number; color: string 
   </div>
 );
 
+const SentimentBars = ({ s }: { s: ResultsPayload["analysis"]["sentiment"] }) => (
+  <div className="space-y-2">
+    <Bar label="Positive" pct={s.positive} color="hsl(var(--success))" />
+    <Bar label="Neutral" pct={s.neutral} color="hsl(var(--muted-foreground))" />
+    <Bar label="Negative" pct={s.negative} color="hsl(var(--destructive))" />
+  </div>
+);
+
+const EmptyPlaceholder = ({ text }: { text: string }) => (
+  <Card className="p-4 md:p-5 border-dashed bg-muted/30">
+    <p className="text-sm text-muted-foreground text-center">{text}</p>
+  </Card>
+);
+
+const StatCard = ({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+}) => (
+  <div className="flex flex-col justify-center p-4 md:p-5 bg-background/70 backdrop-blur rounded-lg border border-border">
+    <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+      {label}
+    </div>
+    <div className="text-2xl md:text-3xl font-bold tabular-nums mt-1 truncate">{value}</div>
+    {sub && <div className="text-xs text-muted-foreground mt-0.5 truncate">{sub}</div>}
+  </div>
+);
+
+const PainPointCard = ({ p }: { p: ResultsPayload["analysis"]["painPoints"][number] }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <Card
+      className="p-4 md:p-5 border-l-[3px] flex flex-col gap-2"
+      style={{ borderLeftColor: "hsl(var(--destructive))" }}
+    >
+      <h3 className="font-semibold text-base leading-tight">{p.title}</h3>
+      <div>
+        <p className={`text-sm text-muted-foreground ${expanded ? "" : "line-clamp-2"}`}>
+          {p.description}
+        </p>
+        {p.description && p.description.length > 110 && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="text-xs text-primary hover:underline mt-1 no-print"
+          >
+            {expanded ? "Show less" : "Read more"}
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+        {p.source && (
+          <Badge variant="outline" className="text-xs font-normal">
+            r/{p.source}
+          </Badge>
+        )}
+        <Badge className={`text-xs ${signalVariant(p.signal)}`}>{p.signal}</Badge>
+        {p.commercialIntent && (
+          <Badge variant="outline" className={`text-xs ${intentVariant(p.commercialIntent)}`}>
+            💰 {p.commercialIntent}
+          </Badge>
+        )}
+        {p.link && (
+          <a
+            href={p.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`View "${p.title}" on Reddit (opens in new tab)`}
+            className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors no-print"
+          >
+            View on Reddit
+            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          </a>
+        )}
+      </div>
+    </Card>
+  );
+};
+
 const Results = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -84,8 +166,8 @@ const Results = () => {
   const [data, setData] = useState<ResultsPayload | null>(null);
   const [numResults, setNumResults] = useState(10);
   const [rerunning, setRerunning] = useState(false);
+  const [evidenceExpanded, setEvidenceExpanded] = useState(false);
 
-  // Blueprint dialog state
   const [blueprintFor, setBlueprintFor] = useState<{ name: string; description: string } | null>(null);
 
   useEffect(() => {
@@ -107,6 +189,20 @@ const Results = () => {
     setData(parsed);
     if (parsed.inputs.numResults) setNumResults(parsed.inputs.numResults);
   }, [navigate, searchParams]);
+
+  const redditPosts: RedditPost[] = useMemo(
+    () => data?.inputs.redditPosts ?? [],
+    [data],
+  );
+
+  const totalFound = data?.inputs.totalFound ?? redditPosts.length;
+  const noPosts = totalFound === 0 || data?.inputs.serperOk === false;
+
+  const [opportunities, gaps] = useMemo(() => {
+    const all = data?.analysis.competitorGaps ?? [];
+    if (all.length <= 3) return [all, []];
+    return [all.slice(0, 3), all.slice(3)];
+  }, [data]);
 
   if (!data) return null;
   const { inputs, analysis } = data;
@@ -155,6 +251,9 @@ const Results = () => {
           effectiveSubreddits:
             redditData?.effectiveSubreddits ?? inputs.effectiveSubreddits ?? [],
           rationale: redditData?.rationale ?? inputs.rationale,
+          redditPosts: redditData?.results ?? inputs.redditPosts ?? [],
+          totalFound: Number(redditData?.totalFound ?? redditData?.results?.length ?? 0),
+          serperOk: redditData?.serperOk !== false,
         },
         analysis: analyzeData.analysis,
       };
@@ -185,7 +284,8 @@ const Results = () => {
 Keyword: ${inputs.keyword}
 App idea: ${inputs.appIdea || "(none)"}
 Subreddit: ${inputs.subreddit ? "r/" + inputs.subreddit : "across Reddit"}
-Idea Match Score: ${analysis.ideaMatchScore}/100
+Pain Score: ${analysis.ideaMatchScore}/100
+Posts Found: ${totalFound}
 
 SUMMARY
 ${analysis.summary}
@@ -197,17 +297,17 @@ ${analysis.sentimentSummary}
 PAIN POINTS
 ${analysis.painPoints.map((p) => `• [${p.signal}] ${p.title} (r/${p.source})\n  ${p.description}${p.link ? `\n  ${p.link}` : ""}`).join("\n")}
 
-IDEA VALIDATION (${analysis.ideaValidation.matchPercentage}%)
-${analysis.ideaValidation.reasons.map((r) => `• ${r}`).join("\n")}
+APP OPPORTUNITIES
+${opportunities.map((g) => `• ${g.gap}: ${g.description}${g.opportunity ? `\n  Unique angle: ${g.opportunity}` : ""}`).join("\n")}
 
-APP OPPORTUNITIES (Competitor gaps)
-${analysis.competitorGaps.map((g) => `• ${g.gap}: ${g.description}`).join("\n")}
+COMPETITOR GAPS
+${gaps.map((g) => `• ${g.gap}: ${g.description}`).join("\n")}
 
 NICHES
 ${analysis.niches.map((n) => `• [${n.size}] ${n.niche} — ${n.description}`).join("\n")}
 
 POTENTIAL FIRST USERS
-${analysis.firstUserPersonas.map((p) => `• ${p.persona} — ${p.pain}`).join("\n")}
+${analysis.firstUserPersonas.map((p) => `• ${p.persona} — ${p.pain}${p.willingToPay ? ` (Pays: ${p.willingToPay})` : ""}`).join("\n")}
 
 RECOMMENDED SUBREDDITS
 ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
@@ -223,7 +323,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
   const shareReport = async () => {
     try {
       const u = new URL(window.location.href);
-      u.search = ""; // clean
+      u.search = "";
       u.searchParams.set("data", encodeShare(data));
       await navigator.clipboard.writeText(u.toString());
       toast({
@@ -241,328 +341,349 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
   };
 
   const score = Math.round(analysis.ideaMatchScore);
+  const avgSig = inputs.rationale?.avgScore ?? 0;
+  const topSubreddit = inputs.effectiveSubreddits?.[0] ?? "—";
+
+  const visibleEvidence = evidenceExpanded ? redditPosts : redditPosts.slice(0, 5);
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container max-w-4xl py-8 md:py-12 space-y-8">
-        {/* Header section */}
-        <div className="fade-in flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-2">
+      <main className="container max-w-5xl py-8 md:py-12 space-y-6">
+        {/* Page header */}
+        <div className="fade-in flex flex-col md:flex-row md:items-end justify-between gap-3">
+          <div className="flex-1 min-w-0">
             <div className="text-sm text-muted-foreground">Research report</div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">
               {inputs.keyword}
             </h1>
             {inputs.appIdea && (
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm mt-1">
                 <span className="font-medium text-foreground">Idea:</span> {inputs.appIdea}
               </p>
             )}
-            {(() => {
-              const sources =
-                inputs.subreddit
-                  ? [inputs.subreddit]
-                  : (inputs.effectiveSubreddits ?? []);
-              if (sources.length === 0) {
-                return (
-                  <p className="text-sm text-muted-foreground">
-                    Searched <span className="font-medium">across Reddit</span>
-                  </p>
-                );
-              }
-              return (
-                <div className="text-sm text-muted-foreground">
-                  <span>{inputs.subreddit ? "Searched in " : "Top sources: "}</span>
-                  <span className="inline-flex flex-wrap gap-1.5 align-middle">
-                    {sources.map((s) => (
-                      <a
-                        key={s}
-                        href={`https://reddit.com/r/${s}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium text-foreground hover:text-primary transition-colors"
-                      >
-                        r/{s}
-                      </a>
-                    ))}
-                  </span>
-                </div>
-              );
-            })()}
-          </div>
-          <div className="flex flex-col items-center shrink-0">
-            <div className="relative h-32 w-32 rounded-full bg-primary text-primary-foreground flex flex-col items-center justify-center shadow-lg">
-              <span className="text-4xl font-bold leading-none">{score}</span>
-              <span className="text-xs mt-1 opacity-90">/ 100</span>
-            </div>
-            <span className="text-xs text-muted-foreground mt-2 font-medium">
-              Idea Match Score
-            </span>
           </div>
         </div>
 
-        {/* Why these results — search rationale */}
-        {inputs.rationale && (
-          <Card className="p-5 fade-in border-dashed bg-muted/30">
-            <div className="flex items-start gap-3">
-              <div className="h-8 w-8 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                <SearchIcon className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-sm font-semibold mb-1">Why these results</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {inputs.rationale.summary}
-                </p>
-                {inputs.rationale.topSignals.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {inputs.rationale.topSignals.map((t) => (
-                      <Badge
-                        key={t.signal}
-                        variant="outline"
-                        className="text-xs bg-background"
-                      >
-                        “{t.signal}” ×{t.count}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground tabular-nums">
-                  <span>{inputs.rationale.totalQueries} parallel queries</span>
-                  <span>·</span>
-                  <span>avg signal score {inputs.rationale.avgScore}</span>
-                  {inputs.rationale.multiQueryHits > 0 && (
-                    <>
-                      <span>·</span>
-                      <span>{inputs.rationale.multiQueryHits} cross-query match{inputs.rationale.multiQueryHits === 1 ? "" : "es"}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
+        {/* 1. Hero stats bar */}
+        <div
+          className="rounded-xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-4 gap-3 fade-in"
+          style={{ background: "hsl(16 100% 97%)" }}
+        >
+          <StatCard label="Pain Score" value={`${score}/100`} />
+          <StatCard label="Posts Found" value={totalFound} />
+          <StatCard
+            label="Avg Signal"
+            value={avgSignalLabel(avgSig)}
+            sub={`avg ${avgSig.toFixed(1)}`}
+          />
+          <StatCard
+            label="Top Subreddit"
+            value={topSubreddit !== "—" ? `r/${topSubreddit}` : "—"}
+          />
+        </div>
+
+        {/* 2. Warning banner if no Reddit data */}
+        {noPosts && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-4 fade-in"
+          >
+            <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+            <p className="text-sm text-yellow-900 dark:text-yellow-100">
+              <strong>No Reddit posts found.</strong> Showing AI-generated insights based on general
+              knowledge. For real Reddit data, try a more specific keyword
+              {inputs.serperOk === false ? " (or check that the Serper API key is valid)" : ""}.
+            </p>
+          </div>
         )}
 
-        {/* Summary */}
-        <Card className="p-6 fade-in">
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" /> Summary
+        {/* 3. Summary */}
+        <Card className="p-4 md:p-5 fade-in">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Summary
           </h2>
-          <p className="text-foreground leading-relaxed">{analysis.summary}</p>
+          <p className="text-foreground leading-relaxed line-clamp-3">{analysis.summary}</p>
         </Card>
 
-        {/* Sentiment */}
-        <Card className="p-6 fade-in">
-          <h2 className="text-lg font-semibold mb-3">Reddit Sentiment</h2>
+        {/* 4. Pain Points */}
+        <section className="fade-in">
+          <h2 className="text-xl font-semibold mb-4">Pain Points</h2>
+          {analysis.painPoints.length === 0 ? (
+            <EmptyPlaceholder text="Not enough Reddit data found for this section" />
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+              {analysis.painPoints.map((p, i) => (
+                <PainPointCard key={i} p={p} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* 5. Reddit Evidence */}
+        <section className="fade-in">
+          <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            Reddit Evidence
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Real posts retrieved by the search — proof the analysis is grounded in actual
+            discussions.
+          </p>
+          {visibleEvidence.length === 0 ? (
+            <EmptyPlaceholder text="Not enough Reddit data found for this section" />
+          ) : (
+            <>
+              <div className="space-y-2">
+                {visibleEvidence.map((post, i) => (
+                  <Card key={i} className="p-3 md:p-4 hover:border-primary/40 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <a
+                          href={post.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-sm hover:text-primary hover:underline line-clamp-1"
+                        >
+                          {post.title}
+                        </a>
+                        <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                          {post.snippet || "(no snippet)"}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Badge variant="outline" className="text-xs font-normal">
+                            {post.subreddit}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            signal {post.score}
+                          </span>
+                        </div>
+                      </div>
+                      <a
+                        href={post.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary shrink-0 no-print"
+                        aria-label="Open on Reddit"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              {redditPosts.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setEvidenceExpanded((v) => !v)}
+                  className="mt-3 text-sm text-primary hover:underline no-print"
+                >
+                  {evidenceExpanded
+                    ? "Show fewer posts"
+                    : `Show all ${redditPosts.length} posts →`}
+                </button>
+              )}
+            </>
+          )}
+        </section>
+
+        {/* 6. Sentiment */}
+        <Card className="p-4 md:p-5 fade-in">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Reddit Sentiment
+          </h2>
           <SentimentBars s={analysis.sentiment} />
           {analysis.sentimentSummary && (
-            <p className="text-sm text-muted-foreground mt-3 italic">
-              {analysis.sentimentSummary}
-            </p>
+            <p className="text-sm text-muted-foreground mt-3 italic">{analysis.sentimentSummary}</p>
           )}
         </Card>
 
-        {/* Pain points */}
-        <section className="fade-in">
-          <h2 className="text-xl font-semibold mb-4">Pain Points</h2>
-          <div className="grid gap-3">
-            {analysis.painPoints.map((p, i) => (
-              <Card
-                key={i}
-                className="p-5 border-l-4"
-                style={{ borderLeftColor: "hsl(var(--destructive))" }}
-              >
-                <div className="flex items-start justify-between gap-3 mb-1">
-                  <h3 className="font-semibold">{p.title}</h3>
-                  <div className="flex flex-wrap gap-1.5 shrink-0">
-                    <Badge className={signalVariant(p.signal)}>{p.signal}</Badge>
-                    {p.commercialIntent && (
-                      <Badge variant="outline" className={`text-xs ${intentVariant(p.commercialIntent)}`}>
-                        💰 {p.commercialIntent}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">{p.description}</p>
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <p className="text-xs text-muted-foreground">from r/{p.source}</p>
-                  {p.link && (
-                    <a
-                      href={p.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`View "${p.title}" on Reddit (opens in new tab)`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 -mr-1 rounded-md text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors no-print"
-                    >
-                      View on Reddit
-                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* Idea validation */}
-        <Card className="p-6 fade-in">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Idea Validation</h2>
-            <Badge className="bg-primary text-primary-foreground text-base px-3 py-1">
-              {Math.round(analysis.ideaValidation.matchPercentage)}% match
-            </Badge>
-          </div>
-          <ul className="space-y-2">
-            {analysis.ideaValidation.reasons.map((r, i) => (
-              <li key={i} className="flex gap-2 text-foreground">
-                <span className="text-primary mt-1">•</span>
-                <span>{r}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        {/* App opportunities (formerly competitor gaps) + Build This App */}
+        {/* 7. App Opportunities */}
         <section className="fade-in">
           <h2 className="text-xl font-semibold mb-1">App Opportunities</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Gaps in existing solutions you could fill. Click <strong>Get Blueprint</strong> for an MVP plan.
+            Gaps in existing solutions you could fill. Click <strong>Get Blueprint</strong> for an
+            MVP plan.
           </p>
-          <div className="grid gap-3 md:grid-cols-3">
-            {analysis.competitorGaps.map((g, i) => (
-              <Card
-                key={i}
-                className="p-5 border-l-4 flex flex-col"
-                style={{ borderLeftColor: "hsl(var(--success))" }}
-              >
-                <h3 className="font-semibold mb-2">{g.gap}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{g.description}</p>
-                {g.opportunity && (
-                  <p className="text-sm mb-4 flex-1 text-success font-medium">
-                    <span className="opacity-80">Opportunity:</span> {g.opportunity}
-                  </p>
-                )}
-                {!g.opportunity && <div className="flex-1" />}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="no-print"
-                  onClick={() => setBlueprintFor({ name: g.gap, description: g.description })}
+          {opportunities.length === 0 ? (
+            <EmptyPlaceholder text="Not enough Reddit data found for this section" />
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+              {opportunities.map((g, i) => (
+                <Card
+                  key={i}
+                  className="p-4 md:p-5 border-t-[3px] flex flex-col"
+                  style={{ borderTopColor: "hsl(var(--primary))" }}
                 >
-                  <Sparkles className="h-3.5 w-3.5" /> Get Blueprint →
-                </Button>
-              </Card>
-            ))}
-          </div>
+                  <h3 className="font-semibold text-base mb-2 leading-tight">{g.gap}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                    {g.description}
+                  </p>
+                  {g.opportunity && (
+                    <p className="text-sm italic text-success font-medium mb-4 flex-1">
+                      <span className="not-italic font-semibold opacity-80">Unique angle:</span>{" "}
+                      {g.opportunity}
+                    </p>
+                  )}
+                  {!g.opportunity && <div className="flex-1" />}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="no-print"
+                    onClick={() => setBlueprintFor({ name: g.gap, description: g.description })}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> Get Blueprint →
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* Niche finder */}
-        {analysis.niches.length > 0 && (
-          <section className="fade-in">
-            <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Specific sub-niches to explore. Click any card to research that niche.
-            </p>
-            <div className="grid gap-3 md:grid-cols-2">
+        {/* 8. Competitor Gaps */}
+        <section className="fade-in">
+          <h2 className="text-xl font-semibold mb-4">Competitor Gaps</h2>
+          {gaps.length === 0 ? (
+            <EmptyPlaceholder text="Not enough Reddit data found for this section" />
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+              {gaps.map((g, i) => (
+                <Card key={i} className="p-4 md:p-5">
+                  <h3 className="font-semibold text-sm mb-1.5">{g.gap}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{g.description}</p>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* 9. Niche Opportunities — horizontal chips */}
+        <section className="fade-in">
+          <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
+          <p className="text-sm text-muted-foreground mb-3">
+            Click any chip to research that niche.
+          </p>
+          {analysis.niches.length === 0 ? (
+            <EmptyPlaceholder text="Not enough Reddit data found for this section" />
+          ) : (
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
               {analysis.niches.map((n, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => searchNiche(n)}
-                  className="text-left rounded-xl p-5 border border-border bg-card hover:border-primary/60 hover:shadow-md transition-all group"
+                  className="snap-start shrink-0 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm hover:border-primary/60 hover:shadow-sm transition-all"
+                  title={n.description}
                 >
-                  <div className="flex items-start justify-between gap-3 mb-1.5">
-                    <h3 className="font-semibold group-hover:text-primary transition-colors">
-                      {n.niche}
-                    </h3>
-                    <Badge variant="outline" className={`text-xs ${sizeVariant(n.size)}`}>
-                      {n.size}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">{n.description}</p>
-                  <span className="text-xs text-primary font-medium inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
-                    <SearchIcon className="h-3 w-3" /> Research this niche
-                  </span>
+                  <span>🎯</span>
+                  <span className="font-medium">{n.niche}</span>
+                  <Badge variant="outline" className={`text-xs ${sizeChipVariant(n.size)}`}>
+                    {n.size}
+                  </Badge>
                 </button>
               ))}
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
-        {/* First users */}
+        {/* 10. Potential First Users */}
         <section className="fade-in">
           <h2 className="text-xl font-semibold mb-4">Potential First Users</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            {analysis.firstUserPersonas.map((p, i) => (
-              <Card key={i} className="p-5">
-                <div className="flex items-start justify-between gap-3 mb-1">
-                  <h3 className="font-semibold">{p.persona}</h3>
+          {analysis.firstUserPersonas.length === 0 ? (
+            <EmptyPlaceholder text="Not enough Reddit data found for this section" />
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+              {analysis.firstUserPersonas.map((p, i) => (
+                <Card key={i} className="p-4 md:p-5">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="font-semibold text-sm leading-tight">{p.persona}</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-3">{p.pain}</p>
                   {p.willingToPay && (
-                    <Badge variant="outline" className={`text-xs shrink-0 ${payVariant(p.willingToPay)}`}>
-                      Willing to pay: {p.willingToPay}
+                    <Badge
+                      variant="outline"
+                      className={`text-xs mt-2 ${payVariant(p.willingToPay)}`}
+                    >
+                      Pays: {p.willingToPay}
                     </Badge>
                   )}
-                </div>
-                <p className="text-sm text-muted-foreground">{p.pain}</p>
-              </Card>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* Recommended subreddits */}
+        {/* 11. Recommended Subreddits */}
         <section className="fade-in no-print">
           <h2 className="text-xl font-semibold mb-4">Recommended Subreddits</h2>
-          <div className="flex flex-wrap gap-2">
-            {analysis.recommendedSubreddits.map((s) => {
-              const clean = s.replace(/^r\//, "");
-              return (
-                <a
-                  key={clean}
-                  href={`https://reddit.com/r/${clean}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors border border-border"
-                >
-                  r/{clean}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              );
-            })}
-          </div>
+          {analysis.recommendedSubreddits.length === 0 ? (
+            <EmptyPlaceholder text="Not enough Reddit data found for this section" />
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {analysis.recommendedSubreddits.map((s) => {
+                const clean = s.replace(/^r\//, "");
+                return (
+                  <a
+                    key={clean}
+                    href={`https://reddit.com/r/${clean}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors border border-border"
+                  >
+                    r/{clean}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                );
+              })}
+            </div>
+          )}
         </section>
 
-        {/* Actions */}
+        {/* 12. Action Bar */}
         <div className="flex flex-wrap gap-2 pt-4 fade-in no-print">
           <Button onClick={() => navigate("/")} variant="outline" className="flex-1 min-w-[140px]">
             <ArrowLeft className="h-4 w-4" /> Search Again
           </Button>
-          <Button
-            onClick={rerunWithMore}
-            variant="outline"
-            disabled={rerunning || !canRerun}
-            className="flex-1 min-w-[160px]"
-            title={canRerun ? `Re-analyze with ${nextCount} results` : "Already at max results"}
-          >
-            {rerunning ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Re-analyzing…
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                {canRerun ? `Use more results (${nextCount})` : `Max (${numResults})`}
-              </>
-            )}
-          </Button>
           <Button onClick={shareReport} variant="outline" className="flex-1 min-w-[120px]">
             <Share2 className="h-4 w-4" /> Share
           </Button>
-          <Button onClick={() => window.print()} variant="outline" className="flex-1 min-w-[140px]">
+          <Button
+            onClick={() => window.print()}
+            variant="outline"
+            className="flex-1 min-w-[140px]"
+          >
             <Printer className="h-4 w-4" /> Export PDF
           </Button>
-          <Button onClick={copyReport} className="flex-1 min-w-[140px] bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button
+            onClick={copyReport}
+            className="flex-1 min-w-[140px] bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
             <Copy className="h-4 w-4" /> Copy Report
           </Button>
         </div>
+
+        {/* Secondary action: rerun with more results */}
+        {canRerun && (
+          <div className="flex justify-center fade-in no-print">
+            <Button
+              onClick={rerunWithMore}
+              variant="ghost"
+              size="sm"
+              disabled={rerunning}
+              className="text-muted-foreground"
+            >
+              {rerunning ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Re-analyzing…
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" /> Use more results ({nextCount})
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </main>
 
       {blueprintFor && (
