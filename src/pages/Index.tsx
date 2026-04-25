@@ -103,6 +103,10 @@ async function runOneSearch(opts: {
   );
   if (redditErr) throw redditErr;
 
+  const fetched = redditData?.results?.length ?? 0;
+  opts.onStep?.("score", `Merged & ranked ${fetched} unique posts`);
+
+  opts.onStep?.("ai", `Analyzing ${fetched} posts with Gemini`);
   const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
     "analyze",
     {
