@@ -38,6 +38,22 @@ const sizeVariant = (s: Niche["size"]) => {
   return "bg-muted text-muted-foreground border-border";
 };
 
+const intentVariant = (s: string) => {
+  // Dark orange for High, yellow for Medium, gray for Low
+  if (s === "High") return "bg-primary text-primary-foreground border-transparent";
+  if (s === "Medium")
+    return "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
+  return "bg-muted text-muted-foreground border-border";
+};
+
+const payVariant = (s: string) => {
+  if (s === "Yes")
+    return "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30";
+  if (s === "Maybe")
+    return "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
+  return "bg-muted text-muted-foreground border-border";
+};
+
 const SentimentBars = ({ s }: { s: ResultsPayload["analysis"]["sentiment"] }) => (
   <div className="space-y-2">
     <Bar label="Positive" pct={s.positive} color="hsl(var(--success))" />
