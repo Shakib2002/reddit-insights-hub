@@ -341,10 +341,19 @@ const Index = () => {
       navigate("/results");
     } catch (e) {
       console.error(e);
+      const stage = (e as any)?._stage as any;
+      const friendly = toFriendlyError(e, stage);
       toast({
-        title: "Analysis failed",
-        description: e instanceof Error ? e.message : "Please try again.",
+        title: friendly.title,
+        description: friendly.hint
+          ? `${friendly.description} ${friendly.hint}`
+          : friendly.description,
         variant: "destructive",
+        action: friendly.retryable ? (
+          <ToastAction altText="Retry" onClick={() => runQuickSearch(topic)}>
+            Retry
+          </ToastAction>
+        ) : undefined,
       });
       setLoading(false);
     }
