@@ -494,11 +494,6 @@ const Index = () => {
         <div className="relative max-w-[640px] mx-auto fade-in" style={{ animationDelay: "80ms" }}>
           <div aria-hidden className="absolute -inset-px rounded-[22px] bg-gradient-to-br from-primary/40 via-primary/10 to-transparent blur-md opacity-60" />
           <Card className="relative p-5 sm:p-7 md:p-8 shadow-card-lg border-border bg-card rounded-[20px]">
-
-        {/* Search Card with gradient glow */}
-        <div className="relative fade-in" style={{ animationDelay: "80ms" }}>
-          <div aria-hidden className="absolute -inset-px rounded-[calc(var(--radius)+1px)] bg-gradient-to-br from-primary/30 via-primary/5 to-transparent blur-sm opacity-70" />
-          <Card className="relative p-4 sm:p-6 md:p-8 shadow-xl border-border/60 backdrop-blur-sm bg-card/95">
           {loading ? (
             <LoadingSteps
               title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
