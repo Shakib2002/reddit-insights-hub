@@ -14,7 +14,8 @@ import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 import { dbSaveSearch, dbSaveValidation } from "@/lib/db-history";
 import { useAuth } from "@/hooks/useAuth";
-import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
+import { type LoadingStep } from "@/components/LoadingSteps";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { LivePainFeed } from "@/components/LivePainFeed";
 
 const EXAMPLES = [
@@ -494,12 +495,7 @@ const Index = () => {
         <div className="relative max-w-[640px] mx-auto fade-in" style={{ animationDelay: "80ms" }}>
           <div aria-hidden className="absolute -inset-px rounded-[22px] bg-gradient-to-br from-primary/40 via-primary/10 to-transparent blur-md opacity-60" />
           <Card className="relative p-5 sm:p-7 md:p-8 shadow-card-lg border-border bg-card rounded-[20px]">
-          {loading ? (
-            <LoadingSteps
-              title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
-              steps={steps}
-            />
-          ) : (
+          {(
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Mode toggle */}
               <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg">
