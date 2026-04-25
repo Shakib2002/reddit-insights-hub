@@ -223,20 +223,22 @@ const Index = () => {
 
         <Card className="p-6 md:p-8 fade-in">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-lg font-medium transition-opacity duration-500">
-                {LOADING_STEPS[step]}
+            <div className="flex flex-col items-center justify-center py-10 gap-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-base md:text-lg font-medium text-center">
+                {LOADING_STAGES[stageIdx]?.label}
               </p>
-              <div className="flex gap-2 mt-2">
-                {LOADING_STEPS.map((_, i) => (
+              <div className="w-full max-w-sm">
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    key={i}
-                    className={`h-1.5 w-10 rounded-full transition-colors ${
-                      i <= step ? "bg-primary" : "bg-muted"
-                    }`}
+                    className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${Math.round(progress)}%` }}
                   />
-                ))}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground mt-2 tabular-nums">
+                  <span>{Math.round(progress)}%</span>
+                  <span>10 parallel searches</span>
+                </div>
               </div>
             </div>
           ) : (
