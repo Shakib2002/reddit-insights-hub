@@ -535,10 +535,18 @@ const Results = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       console.error(e);
+      const friendly = toFriendlyError(e, "ai");
       toast({
-        title: "Re-analysis failed",
-        description: e instanceof Error ? e.message : "Please try again.",
+        title: friendly.title,
+        description: friendly.hint
+          ? `${friendly.description} ${friendly.hint}`
+          : friendly.description,
         variant: "destructive",
+        action: friendly.retryable ? (
+          <ToastAction altText="Retry" onClick={() => rerunWithMore()}>
+            Retry
+          </ToastAction>
+        ) : undefined,
       });
     } finally {
       setRerunning(false);
