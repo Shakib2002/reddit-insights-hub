@@ -4,8 +4,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM =
-  "You are a Reddit research expert and startup advisor. Analyze Reddit discussion snippets to extract pain points, validate app ideas, gauge sentiment, find market opportunities and niches. Always return valid JSON only.";
+const SYSTEM = `You are a world-class product researcher who specializes in finding validated startup opportunities from Reddit discussions.
+
+Your job:
+1. Find SPECIFIC, ACTIONABLE pain points — not vague complaints
+2. Prioritize pain points with HIGH COMMERCIAL INTENT
+3. Spot patterns that appear across multiple Reddit communities
+4. Rate each pain point by frequency, intensity, and willingness to pay
+5. Generate app ideas that DIRECTLY solve the discovered pain points
+
+Rules:
+- Only include pain points mentioned by multiple users
+- Prioritize pain points where users mention money (I'd pay, worth it, subscription)
+- Ignore generic complaints with no actionable solution
+- Be specific: 'Notion is too complex for simple task lists' not 'apps are bad'
+- Always return valid JSON only — no markdown, no explanation`;
 
 const MODEL_ROUTER_URL = "https://api.modelrouter.app/v1/chat/completions";
 const MODEL = "gemini-3-flash-preview";
@@ -24,40 +37,58 @@ function clampPct(n: any): number {
   return Math.max(0, Math.min(100, Math.round(v)));
 }
 
+function normEnum(v: any, allowed: string[], fallback: string): string {
+  return allowed.includes(v) ? v : fallback;
+}
+
 function normalizeSentiment(raw: any) {
   const pos = clampPct(raw?.positive);
   const neu = clampPct(raw?.neutral);
   const neg = clampPct(raw?.negative);
   const total = pos + neu + neg;
   if (total === 0) return { positive: 33, neutral: 34, negative: 33 };
-  // Re-normalize to sum to 100
   const p = Math.round((pos / total) * 100);
   const n = Math.round((neu / total) * 100);
   return { positive: p, neutral: n, negative: 100 - p - n };
 }
 
 function normalizeAnalysis(raw: any) {
+  // Pain score from new prompt; fall back to ideaMatchScore for compat
+  const painScore = clampPct(raw.painScore ?? raw.ideaMatchScore ?? 0);
+
+  // Merge new appOpportunities[] into competitorGaps[] shape used by UI
+  const fromOpps = (raw.appOpportunities ?? []).map((o: any) => ({
+    gap: o.name ?? o.gap ?? "",
+    description: o.description ?? "",
+    opportunity: o.uniqueAngle ?? o.opportunity ?? "",
+  }));
+  const fromGaps = (raw.competitorGaps ?? []).map((g: any) => ({
+    gap: g.gap ?? "",
+    description: g.description ?? "",
+    opportunity: g.opportunity ?? "",
+  }));
+  const competitorGaps = [...fromOpps, ...fromGaps].slice(0, 6);
+
   return {
     summary: raw.summary ?? "",
-    ideaMatchScore: Number(raw.ideaMatchScore ?? 0),
+    ideaMatchScore: painScore,
     painPoints: (raw.painPoints ?? []).map((p: any, i: number) => ({
       title: p.title ?? "",
       description: p.description ?? "",
-      source: p.source ?? p.subreddit ?? "",
-      signal: p.signal ?? "Medium",
+      source: (p.subreddit ?? p.source ?? "").replace(/^r\//, ""),
+      signal: normEnum(p.signal, ["High", "Medium", "Low"], "Medium"),
+      commercialIntent: normEnum(p.commercialIntent, ["High", "Medium", "Low"], "Medium"),
       sourceIndex: typeof p.sourceIndex === "number" ? p.sourceIndex : i + 1,
     })),
     ideaValidation: {
-      matchPercentage: Number(raw.ideaValidation?.matchPercentage ?? 0),
+      matchPercentage: clampPct(raw.ideaValidation?.matchPercentage ?? painScore),
       reasons: raw.ideaValidation?.reasons ?? [],
     },
-    competitorGaps: (raw.competitorGaps ?? []).map((g: any) => ({
-      gap: g.gap ?? "",
-      description: g.description ?? "",
-    })),
+    competitorGaps,
     firstUserPersonas: (raw.firstUserPersonas ?? []).map((p: any) => ({
       persona: p.persona ?? "",
       pain: p.pain ?? "",
+      willingToPay: normEnum(p.willingToPay, ["Yes", "Maybe", "No"], "Maybe"),
     })),
     recommendedSubreddits: (raw.recommendedSubreddits ?? []).map((s: string) =>
       s.replace(/^r\//, ""),
@@ -67,7 +98,7 @@ function normalizeAnalysis(raw: any) {
     niches: (raw.niches ?? []).map((n: any) => ({
       niche: n.niche ?? "",
       description: n.description ?? "",
-      size: ["Large", "Medium", "Small"].includes(n.size) ? n.size : "Medium",
+      size: normEnum(n.size, ["Large", "Medium", "Small"], "Medium"),
     })),
   };
 }
@@ -85,59 +116,74 @@ Deno.serve(async (req) => {
           .slice(0, 25)
           .map(
             (r: any, i: number) =>
-              `[${i + 1}] r/${r.subreddit || "unknown"}\nTitle: ${r.title}\nSnippet: ${r.snippet}`,
+              `[${i + 1}] Title: ${r.title}\nSubreddit: ${r.subreddit || "r/reddit"}\nSnippet: ${r.snippet}\nSignal Score: ${r.score ?? 0}`,
           )
           .join("\n\n")
       : "(No Reddit search results retrieved — rely on general knowledge of common Reddit discussions about this topic.)";
 
     const ideaLine = appIdea && String(appIdea).trim()
-      ? `The user's app idea is: "${appIdea}". Score how well this idea matches the discussions found.`
-      : `The user has NOT provided a specific app idea. For "ideaMatchScore" and "ideaValidation.matchPercentage", instead score the overall opportunity strength of this topic on Reddit (0-100). For "ideaValidation.reasons", list 3 reasons why this topic is or isn't a strong opportunity for a new product.`;
+      ? `The user's app idea is: "${appIdea}". Use it to bias the validation reasoning.`
+      : `The user has NOT provided a specific app idea. Score the overall opportunity strength of this topic on Reddit.`;
 
     const langInstruction =
       language === "bn"
-        ? `Write ALL textual fields (summary, sentimentSummary, pain point titles & descriptions, validation reasons, competitor gaps, persona labels & pains, niche names & descriptions) in Bangla (Bengali script). Keep numeric fields, "signal" / "size" enum values, "source", and "recommendedSubreddits" in English.`
+        ? `Write ALL textual fields in Bangla (Bengali script). Keep numeric fields, "signal" / "size" / "commercialIntent" / "willingToPay" enums, "subreddit", and "recommendedSubreddits" in English.`
         : language === "both"
-          ? `For every textual field provide BOTH English and Bangla in this exact format: "English text || বাংলা টেক্সট". Keep numeric fields, "signal" / "size" enums, "source", and "recommendedSubreddits" in English only.`
+          ? `For every textual field provide BOTH English and Bangla in this exact format: "English text || বাংলা টেক্সট". Keep numeric fields, enums, "subreddit", and "recommendedSubreddits" in English only.`
           : `Write all textual fields in clear, natural English.`;
 
     const userPrompt = `Analyze these Reddit discussions about "${keyword}". ${ideaLine}
 
 ${langInstruction}
 
-Reddit discussions found:
+DISCUSSIONS (sorted by relevance):
 ${resultsText}
 
-For each pain point, set "sourceIndex" to the [number] of the most relevant discussion above (1-based).
+Instructions:
+- Focus on discussions with higher signal scores
+- Look for patterns repeated across multiple subreddits
+- Prioritize commercial pain points (where money is mentioned)
+- Be specific and actionable in all outputs
+- For each pain point, set "sourceIndex" to the [number] of the most relevant discussion above (1-based)
 
-Return ONLY a JSON object (no prose, no code fences) with this exact structure:
+Return ONLY this JSON (no prose, no code fences):
 {
-  "summary": "2-3 sentence overview",
-  "ideaMatchScore": <number 0-100>,
+  "summary": "2-3 sentences on what Reddit says about this topic",
+  "painScore": <number 0-100 based on intensity and frequency of complaints>,
   "painPoints": [
-    { "title": "string", "description": "string", "source": "subreddit name without r/", "signal": "High" | "Medium" | "Low", "sourceIndex": <number 1-based index into the discussions list above> }
+    {
+      "title": "specific pain point title",
+      "description": "detailed description with specific examples from discussions",
+      "subreddit": "r/subreddit where this was found",
+      "signal": "High" | "Medium" | "Low",
+      "commercialIntent": "High" | "Medium" | "Low",
+      "sourceIndex": <1-based index into the discussions list>
+    }
   ],
   "ideaValidation": {
     "matchPercentage": <number 0-100>,
     "reasons": ["string", "string", "string"]
   },
+  "appOpportunities": [
+    { "name": "App name", "description": "What it does and which pain point it solves", "uniqueAngle": "What makes it different from existing solutions" }
+  ],
   "competitorGaps": [
-    { "gap": "string", "description": "string" }
+    { "gap": "specific gap title", "description": "what existing solutions are missing", "opportunity": "how to exploit this gap" }
   ],
   "firstUserPersonas": [
-    { "persona": "descriptive label, NOT a real username", "pain": "string" }
+    { "persona": "User type e.g. Burnt-out developer", "pain": "Their specific pain in one sentence", "willingToPay": "Yes" | "Maybe" | "No" }
   ],
-  "recommendedSubreddits": ["string without r/ prefix"],
   "sentiment": { "positive": <number>, "neutral": <number>, "negative": <number> },
   "sentimentSummary": "one short sentence describing overall Reddit mood",
   "niches": [
-    { "niche": "specific sub-niche keyword phrase searchable on Reddit", "description": "1 sentence", "size": "Large" | "Medium" | "Small" }
-  ]
+    { "niche": "specific sub-niche keyword phrase searchable on Reddit", "description": "1 sentence on why this niche is underserved", "size": "Large" | "Medium" | "Small" }
+  ],
+  "recommendedSubreddits": ["string without r/ prefix"]
 }
 
 Rules:
-- sentiment numbers MUST sum to 100.
-- Provide 4-5 pain points, 3 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches.`;
+- sentiment numbers MUST sum to 100
+- Provide 4-5 pain points, 3 app opportunities, 2-3 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches`;
 
     const resp = await fetch(MODEL_ROUTER_URL, {
       method: "POST",
@@ -147,7 +193,7 @@ Rules:
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 2500,
+        max_tokens: 3000,
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userPrompt },
@@ -202,7 +248,8 @@ Rules:
       const idx = (p.sourceIndex ?? 0) - 1;
       const src = idx >= 0 && idx < results.length ? results[idx] : null;
       const link = src?.link ?? "";
-      const subFromLink = extractSubFromLink(link) || src?.subreddit || "";
+      const subFromLink =
+        extractSubFromLink(link) || (src?.subreddit ?? "").replace(/^r\//, "") || "";
       return {
         ...p,
         link,
