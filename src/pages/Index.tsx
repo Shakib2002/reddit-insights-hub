@@ -21,6 +21,18 @@ const EXAMPLES = [
   "journaling apps",
 ];
 
+const SUBREDDIT_SUGGESTIONS = [
+  "startups",
+  "Entrepreneur",
+  "SideProject",
+  "SaaS",
+  "smallbusiness",
+  "androidapps",
+  "iOSProgramming",
+  "webdev",
+  "indiehackers",
+];
+
 const LOADING_STEPS = [
   "Searching Reddit…",
   "Reading discussions…",
@@ -163,6 +175,25 @@ const Index = () => {
                   onChange={(e) => setSubreddit(e.target.value)}
                   maxLength={50}
                 />
+                {!subreddit.trim() && (
+                  <div className="pt-1">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Popular subreddits — click to use one:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SUBREDDIT_SUGGESTIONS.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setSubreddit(s)}
+                          className="px-2.5 py-1 rounded-full text-xs bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors border border-border"
+                        >
+                          r/{s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-border pt-4">
