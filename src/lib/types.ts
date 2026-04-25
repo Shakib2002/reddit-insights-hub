@@ -85,11 +85,38 @@ export interface Blueprint {
   firstMilestone: string;
 }
 
+export interface ValidationDimension {
+  name: string;
+  score: number;
+  verdict: string;
+  evidence: string;
+  redditQuote: string;
+}
+
+export interface Validation {
+  overallScore: number;
+  verdict: string;
+  verdictReason: string;
+  dimensions: ValidationDimension[];
+  strengths: string[];
+  weaknesses: string[];
+  pivotSuggestions: string[];
+  nextSteps: string[];
+  redditEvidenceCount: number;
+}
+
+export interface ValidatePayload {
+  mode: "validate";
+  inputs: SearchInputs;
+  validation: Validation;
+}
+
 export interface HistoryItem {
   id: string;
   keyword: string;
   timestamp: number;
   painScore: number;
   summary: string;
-  payload: ResultsPayload;
+  payload: ResultsPayload | ValidatePayload;
+  kind?: "search" | "validate";
 }
