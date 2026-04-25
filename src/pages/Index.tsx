@@ -34,11 +34,10 @@ const SUBREDDIT_SUGGESTIONS = [
   "indiehackers",
 ];
 
-const LOADING_STEPS = [
-  "Searching Reddit…",
-  "Reading discussions…",
-  "Analyzing with AI…",
-  "Building report…",
+const LOADING_STAGES = [
+  { label: "Running 10 Reddit searches…", until: 55 },
+  { label: "Analyzing results…", until: 85 },
+  { label: "Building report…", until: 100 },
 ];
 
 async function runOneSearch(opts: {
