@@ -1018,6 +1018,9 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
 
         {/* (View Source Posts removed — Reddit Evidence section above already lists them) */}
 
+        {/* 11b. Weekly Digest Signup (NEW) */}
+        <WeeklyDigestSignup keyword={inputs.keyword} />
+
         {/* 12. Action Bar */}
         <div className="flex flex-wrap gap-2 pt-4 fade-in no-print">
           <Button onClick={() => navigate("/")} variant="outline" className="flex-1 min-w-[140px]">
