@@ -929,26 +929,31 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </Button>
         </div>
 
-        {/* Secondary action: rerun with more results */}
-        {canRerun && (
+        {/* Secondary action: load more results */}
+        {canRerun ? (
           <div className="flex justify-center fade-in no-print">
             <Button
               onClick={rerunWithMore}
-              variant="ghost"
-              size="sm"
+              variant="outline"
               disabled={rerunning}
-              className="text-muted-foreground"
+              className="border-primary/40 text-primary hover:bg-primary/10"
             >
               {rerunning ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Re-analyzing…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading more Reddit data…
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" /> Use more results ({nextCount})
+                  <Plus className="h-4 w-4" /> Load 20 more Reddit posts and re-analyze →
                 </>
               )}
             </Button>
+          </div>
+        ) : (
+          <div className="flex justify-center fade-in no-print">
+            <p className="text-sm text-muted-foreground">
+              ✓ Analyzed {totalFound} total Reddit posts
+            </p>
           </div>
         )}
       </main>
