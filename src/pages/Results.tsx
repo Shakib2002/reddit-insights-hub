@@ -380,29 +380,6 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
   const avgSig = inputs.rationale?.avgScore ?? 0;
   const topSubreddit = inputs.effectiveSubreddits?.[0] ?? "—";
 
-  // Evidence filters
-  const evidenceSubreddits = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of redditPosts) if (p.subreddit) set.add(p.subreddit);
-    return [...set].sort();
-  }, [redditPosts]);
-
-  const filteredEvidence = useMemo(() => {
-    const q = evidenceSearch.trim().toLowerCase();
-    return redditPosts.filter((p) => {
-      if (evidenceSubreddit !== "all" && p.subreddit !== evidenceSubreddit) return false;
-      if (evidenceSignal !== "all") {
-        const sig = p.score >= 6 ? "High" : p.score >= 3 ? "Medium" : "Low";
-        if (sig !== evidenceSignal) return false;
-      }
-      if (q) {
-        const hay = `${p.title} ${p.snippet} ${p.subreddit}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [redditPosts, evidenceSearch, evidenceSignal, evidenceSubreddit]);
-
   const filtersActive =
     evidenceSearch.trim() !== "" || evidenceSignal !== "all" || evidenceSubreddit !== "all";
 
