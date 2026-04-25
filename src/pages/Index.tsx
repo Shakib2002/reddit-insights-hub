@@ -105,6 +105,62 @@ async function runOneSearch(opts: {
   };
 }
 
+async function runValidate(opts: {
+  keyword: string;
+  appIdea: string;
+  subreddit: string;
+  numResults: number;
+  language: "en" | "bn" | "both";
+}): Promise<{ payload: import("@/lib/types").ValidatePayload; lowData: boolean; totalFound: number }> {
+  const { data: redditData, error: redditErr } = await supabase.functions.invoke(
+    "reddit-fetch",
+    {
+      body: {
+        keyword: opts.keyword,
+        subreddit: opts.subreddit,
+        numResults: opts.numResults,
+      },
+    },
+  );
+  if (redditErr) throw redditErr;
+
+  const { data: validateData, error: validateErr } = await supabase.functions.invoke(
+    "validate",
+    {
+      body: {
+        keyword: opts.keyword,
+        appIdea: opts.appIdea,
+        results: redditData?.results ?? [],
+        language: opts.language,
+      },
+    },
+  );
+  if (validateErr) {
+    const msg = (validateErr as any).context?.body
+      ? JSON.parse((validateErr as any).context.body).error
+      : validateErr.message;
+    throw new Error(msg);
+  }
+
+  return {
+    payload: {
+      mode: "validate",
+      inputs: {
+        keyword: opts.keyword,
+        appIdea: opts.appIdea,
+        subreddit: opts.subreddit.replace(/^r\//, ""),
+        numResults: opts.numResults,
+        effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
+        language: opts.language,
+        rationale: redditData?.rationale,
+      },
+      validation: validateData.validation,
+    },
+    lowData: !!redditData?.lowData,
+    totalFound: Number(redditData?.totalFound ?? (redditData?.results?.length ?? 0)),
+  };
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
