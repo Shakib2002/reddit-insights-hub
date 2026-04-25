@@ -4,21 +4,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const STORAGE_KEY = "redditlens_subscriptions";
 
 export function WeeklyDigestSignup({ keyword }: { keyword: string }) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       toast({ title: "Enter a valid email", variant: "destructive" });
       return;
     }
+    setSubmitting(true);
+
+    // Save to database (cloud)
+    const { error } = await supabase.from("email_subscriptions").insert({
+      email: trimmed,
+      keyword,
+      user_id: user?.id ?? null,
+    });
+
+    // Mirror to localStorage for backward compat
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       const arr = raw ? JSON.parse(raw) : [];
@@ -27,6 +41,27 @@ export function WeeklyDigestSignup({ keyword }: { keyword: string }) {
     } catch {
       // ignore storage errors
     }
+
+    setSubmitting(false);
+
+    if (error) {
+      // Duplicate (unique constraint) is fine — treat as success
+      if (error.code === "23505") {
+        setDone(true);
+        toast({
+          title: "✓ Already subscribed",
+          description: "You're already on the list for this keyword.",
+        });
+        return;
+      }
+      toast({
+        title: "Subscription failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setDone(true);
     toast({
       title: "✓ You're subscribed!",
@@ -59,9 +94,14 @@ export function WeeklyDigestSignup({ keyword }: { keyword: string }) {
                 maxLength={120}
                 className="flex-1"
                 required
+                disabled={submitting}
               />
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                Subscribe →
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {submitting ? "Saving..." : "Subscribe →"}
               </Button>
             </form>
           )}
