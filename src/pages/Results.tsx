@@ -383,7 +383,34 @@ const Results = () => {
     });
   }, [redditPosts, evidenceSearch, evidenceSignal, evidenceSubreddit]);
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="max-w-2xl mx-auto px-4 pt-32 pb-16">
+          <Card className="p-8 md:p-10 text-center border-border bg-card flex flex-col items-center gap-4">
+            <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
+              <SearchIcon className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">No report loaded</h1>
+            <p className="text-sm text-muted-foreground max-w-md">
+              We couldn't find a saved analysis for this session. This usually happens after a
+              refresh, a long idle period, or if the previous run failed before finishing.
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center pt-2">
+              <Button onClick={() => navigate("/")} className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Start a new search
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/?mode=validate")}>
+                Validate an idea
+              </Button>
+            </div>
+          </Card>
+        </main>
+      </div>
+    );
+  }
   const { inputs, analysis } = data;
 
   const nextCount = Math.min(MAX_RESULTS, numResults + RERUN_STEP);
