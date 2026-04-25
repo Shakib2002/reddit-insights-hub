@@ -257,6 +257,30 @@ const Index = () => {
                 )}
               </div>
 
+              <div className="space-y-2">
+                <Label className="text-sm">Report language</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: "en", label: "English" },
+                    { value: "bn", label: "বাংলা" },
+                    { value: "both", label: "Both" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setLanguage(opt.value)}
+                      className={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+                        language === opt.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-secondary-foreground border-border hover:bg-accent hover:text-accent-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <Button
                 type="submit"
                 size="lg"
