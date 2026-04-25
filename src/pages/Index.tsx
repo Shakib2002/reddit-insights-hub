@@ -164,6 +164,60 @@ const Index = () => {
                   maxLength={50}
                 />
               </div>
+
+              <div className="border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+                  />
+                  Advanced search
+                </button>
+
+                {showAdvanced && (
+                  <div className="mt-4 space-y-5 rounded-lg bg-muted/40 p-4 border border-border">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="numResults" className="text-sm">
+                          Reddit results to fetch
+                        </Label>
+                        <span className="text-sm font-medium tabular-nums">{numResults}</span>
+                      </div>
+                      <Slider
+                        id="numResults"
+                        min={5}
+                        max={30}
+                        step={1}
+                        value={[numResults]}
+                        onValueChange={(v) => setNumResults(v[0])}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        More results = richer analysis but slower.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="includeAll" className="text-sm">
+                          Include r/all context
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Adds a second search for pain-point phrases across all of Reddit.
+                        </p>
+                      </div>
+                      <Switch
+                        id="includeAll"
+                        checked={includeAllContext}
+                        onCheckedChange={setIncludeAllContext}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button
                 type="submit"
                 size="lg"
