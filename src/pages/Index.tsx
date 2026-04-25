@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Loader2, Search, ChevronDown } from "lucide-react";
 import type { ResultsPayload } from "@/lib/types";
 
 const EXAMPLES = [
@@ -32,6 +34,9 @@ const Index = () => {
   const [keyword, setKeyword] = useState("");
   const [appIdea, setAppIdea] = useState("");
   const [subreddit, setSubreddit] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [numResults, setNumResults] = useState(10);
+  const [includeAllContext, setIncludeAllContext] = useState(true);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -54,7 +59,7 @@ const Index = () => {
     try {
       const { data: redditData, error: redditErr } = await supabase.functions.invoke(
         "reddit-fetch",
-        { body: { keyword, subreddit } },
+        { body: { keyword, subreddit, numResults, includeAllContext } },
       );
       if (redditErr) throw redditErr;
 
