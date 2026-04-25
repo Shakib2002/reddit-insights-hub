@@ -534,23 +534,32 @@ const Index = () => {
 
       <main className="container max-w-3xl pt-16 md:pt-24 pb-12 md:pb-16 relative z-10">
         {/* Hero */}
-        <div className="text-center mb-8 md:mb-10 fade-in">
+        <div className="text-center mb-8 md:mb-10">
           <div
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-medium mb-6 text-primary"
-            style={{ background: "rgba(255,69,0,0.1)", border: "1px solid rgba(255,69,0,0.3)" }}
+            className="hero-rise inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-medium mb-6 text-primary"
+            style={{ background: "rgba(255,69,0,0.1)", border: "1px solid rgba(255,69,0,0.3)", animationDelay: "0ms" }}
           >
             <Sparkles className="h-3.5 w-3.5" />
             Powered by AI · Real Reddit data
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[64px] font-bold tracking-tight mb-4 leading-[1.05]">
+          <h1
+            className="hero-rise text-4xl sm:text-5xl md:text-6xl lg:text-[64px] font-bold tracking-tight mb-4 leading-[1.05]"
+            style={{ animationDelay: "120ms" }}
+          >
             Find Real Problems
             <br />
             <span className="gradient-text-orange font-extrabold">Worth Building</span>
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-6 px-2 leading-relaxed">
+          <p
+            className="hero-rise text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-6 px-2 leading-relaxed"
+            style={{ animationDelay: "240ms" }}
+          >
             Validate startup ideas in 30 seconds. Get AI-powered pain points, revenue models, and competitor gaps from real Reddit discussions.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground/80">
+          <div
+            className="hero-rise flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground/80"
+            style={{ animationDelay: "340ms" }}
+          >
             <span>2,400+ ideas analyzed</span>
             <span className="text-border">·</span>
             <span>Founder favorite</span>
@@ -560,7 +569,7 @@ const Index = () => {
         </div>
 
         {/* Search Card with gradient glow */}
-        <div className="relative max-w-[640px] mx-auto fade-in" style={{ animationDelay: "80ms" }}>
+        <div className="relative max-w-[640px] mx-auto hero-rise" style={{ animationDelay: "460ms" }}>
           <div aria-hidden className="absolute -inset-px rounded-[22px] bg-gradient-to-br from-primary/40 via-primary/10 to-transparent blur-md opacity-60" />
           <Card className="relative p-5 sm:p-7 md:p-8 search-card-glow border-border bg-card rounded-[20px]">
           {(
