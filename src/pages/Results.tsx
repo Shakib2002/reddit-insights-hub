@@ -38,6 +38,22 @@ const sizeVariant = (s: Niche["size"]) => {
   return "bg-muted text-muted-foreground border-border";
 };
 
+const intentVariant = (s: string) => {
+  // Dark orange for High, yellow for Medium, gray for Low
+  if (s === "High") return "bg-primary text-primary-foreground border-transparent";
+  if (s === "Medium")
+    return "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
+  return "bg-muted text-muted-foreground border-border";
+};
+
+const payVariant = (s: string) => {
+  if (s === "Yes")
+    return "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30";
+  if (s === "Maybe")
+    return "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30";
+  return "bg-muted text-muted-foreground border-border";
+};
+
 const SentimentBars = ({ s }: { s: ResultsPayload["analysis"]["sentiment"] }) => (
   <div className="space-y-2">
     <Bar label="Positive" pct={s.positive} color="hsl(var(--success))" />
@@ -315,7 +331,14 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
               >
                 <div className="flex items-start justify-between gap-3 mb-1">
                   <h3 className="font-semibold">{p.title}</h3>
-                  <Badge className={signalVariant(p.signal)}>{p.signal}</Badge>
+                  <div className="flex flex-wrap gap-1.5 shrink-0">
+                    <Badge className={signalVariant(p.signal)}>{p.signal}</Badge>
+                    {p.commercialIntent && (
+                      <Badge variant="outline" className={`text-xs ${intentVariant(p.commercialIntent)}`}>
+                        💰 {p.commercialIntent}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-2">{p.description}</p>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -370,7 +393,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                 style={{ borderLeftColor: "hsl(var(--success))" }}
               >
                 <h3 className="font-semibold mb-2">{g.gap}</h3>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">{g.description}</p>
+                <p className="text-sm text-muted-foreground mb-3">{g.description}</p>
+                {g.opportunity && (
+                  <p className="text-sm mb-4 flex-1 text-success font-medium">
+                    <span className="opacity-80">Opportunity:</span> {g.opportunity}
+                  </p>
+                )}
+                {!g.opportunity && <div className="flex-1" />}
                 <Button
                   variant="outline"
                   size="sm"
@@ -423,7 +452,14 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           <div className="grid gap-3 md:grid-cols-2">
             {analysis.firstUserPersonas.map((p, i) => (
               <Card key={i} className="p-5">
-                <h3 className="font-semibold mb-1">{p.persona}</h3>
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <h3 className="font-semibold">{p.persona}</h3>
+                  {p.willingToPay && (
+                    <Badge variant="outline" className={`text-xs shrink-0 ${payVariant(p.willingToPay)}`}>
+                      Willing to pay: {p.willingToPay}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">{p.pain}</p>
               </Card>
             ))}

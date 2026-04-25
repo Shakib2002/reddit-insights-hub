@@ -34,11 +34,10 @@ const SUBREDDIT_SUGGESTIONS = [
   "indiehackers",
 ];
 
-const LOADING_STEPS = [
-  "Searching Reddit…",
-  "Reading discussions…",
-  "Analyzing with AI…",
-  "Building report…",
+const LOADING_STAGES = [
+  { label: "Running 10 Reddit searches…", until: 55 },
+  { label: "Analyzing results…", until: 85 },
+  { label: "Building report…", until: 100 },
 ];
 
 async function runOneSearch(opts: {
@@ -48,7 +47,7 @@ async function runOneSearch(opts: {
   numResults: number;
   includeAllContext: boolean;
   language: "en" | "bn" | "both";
-}): Promise<ResultsPayload> {
+}): Promise<{ payload: ResultsPayload; lowData: boolean; totalFound: number }> {
   const { data: redditData, error: redditErr } = await supabase.functions.invoke(
     "reddit-fetch",
     {
@@ -81,15 +80,19 @@ async function runOneSearch(opts: {
   }
 
   return {
-    inputs: {
-      keyword: opts.keyword,
-      appIdea: opts.appIdea,
-      subreddit: opts.subreddit.replace(/^r\//, ""),
-      numResults: opts.numResults,
-      effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
-      language: opts.language,
-    },
-    analysis: analyzeData.analysis,
+    payload: {
+      inputs: {
+        keyword: opts.keyword,
+        appIdea: opts.appIdea,
+        subreddit: opts.subreddit.replace(/^r\//, ""),
+        numResults: opts.numResults,
+        effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
+        language: opts.language,
+      },
+      analysis: analyzeData.analysis,
+    } as ResultsPayload,
+    lowData: !!redditData?.lowData,
+    totalFound: Number(redditData?.totalFound ?? (redditData?.results?.length ?? 0)),
   };
 }
 
@@ -106,7 +109,8 @@ const Index = () => {
   const [includeAllContext, setIncludeAllContext] = useState(true);
   const [language, setLanguage] = useState<"en" | "bn" | "both">("en");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [stageIdx, setStageIdx] = useState(0);
 
   // Pre-fill from /results "search this niche" via sessionStorage
   useEffect(() => {
@@ -117,10 +121,25 @@ const Index = () => {
     }
   }, []);
 
+  // Animate progress while loading + auto-advance stage label
   useEffect(() => {
     if (!loading) return;
-    const id = setInterval(() => setStep((s) => (s + 1) % LOADING_STEPS.length), 1800);
+    const id = setInterval(() => {
+      setProgress((p) => {
+        const ceiling = LOADING_STAGES[stageIdx]?.until ?? 95;
+        if (p >= ceiling) return p;
+        const delta = Math.max(0.4, (ceiling - p) * 0.06);
+        return Math.min(ceiling, p + delta);
+      });
+    }, 200);
     return () => clearInterval(id);
+  }, [loading, stageIdx]);
+
+  // Auto-advance label: searches → analyzing after ~3.5s
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => setStageIdx((i) => Math.max(i, 1)), 3500);
+    return () => clearTimeout(t);
   }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,26 +154,36 @@ const Index = () => {
     }
 
     setLoading(true);
-    setStep(0);
+    setProgress(0);
+    setStageIdx(0);
 
     try {
       if (compareMode) {
-        setStep(1);
         const [left, right] = await Promise.all([
           runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language }),
           runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language }),
         ]);
-        setStep(3);
-        const payload: ComparePayload = { mode: "compare", left, right };
-        sessionStorage.setItem("redditlens_compare", JSON.stringify(payload));
-        saveToHistory(left);
-        saveToHistory(right);
+        setStageIdx(1);
+        // Searches done by the time the promise resolves; analyze is part of runOneSearch
+        setStageIdx(2);
+        if (left.lowData || right.lowData) {
+          toast({
+            title: "Limited Reddit data found",
+            description: "Results may be less accurate.",
+          });
+        }
+        const compare: ComparePayload = {
+          mode: "compare",
+          left: left.payload,
+          right: right.payload,
+        };
+        sessionStorage.setItem("redditlens_compare", JSON.stringify(compare));
+        saveToHistory(left.payload);
+        saveToHistory(right.payload);
+        setProgress(100);
         navigate("/compare");
       } else {
-        setStep(1);
-        await new Promise((r) => setTimeout(r, 400));
-        setStep(2);
-        const payload = await runOneSearch({
+        const result = await runOneSearch({
           keyword,
           appIdea,
           subreddit,
@@ -162,9 +191,16 @@ const Index = () => {
           includeAllContext,
           language,
         });
-        setStep(3);
-        sessionStorage.setItem("redditlens_results", JSON.stringify(payload));
-        saveToHistory(payload);
+        setStageIdx(2);
+        if (result.lowData) {
+          toast({
+            title: "Limited Reddit data found",
+            description: `Only ${result.totalFound} relevant Reddit results — analysis may be less accurate.`,
+          });
+        }
+        sessionStorage.setItem("redditlens_results", JSON.stringify(result.payload));
+        saveToHistory(result.payload);
+        setProgress(100);
         navigate("/results");
       }
     } catch (e) {
@@ -193,20 +229,22 @@ const Index = () => {
 
         <Card className="p-6 md:p-8 fade-in">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-lg font-medium transition-opacity duration-500">
-                {LOADING_STEPS[step]}
+            <div className="flex flex-col items-center justify-center py-10 gap-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-base md:text-lg font-medium text-center">
+                {LOADING_STAGES[stageIdx]?.label}
               </p>
-              <div className="flex gap-2 mt-2">
-                {LOADING_STEPS.map((_, i) => (
+              <div className="w-full max-w-sm">
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    key={i}
-                    className={`h-1.5 w-10 rounded-full transition-colors ${
-                      i <= step ? "bg-primary" : "bg-muted"
-                    }`}
+                    className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${Math.round(progress)}%` }}
                   />
-                ))}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground mt-2 tabular-nums">
+                  <span>{Math.round(progress)}%</span>
+                  <span>10 parallel searches</span>
+                </div>
               </div>
             </div>
           ) : (
