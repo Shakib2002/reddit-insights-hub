@@ -779,39 +779,74 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
             <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
-              {gaps.map((g, i) => (
-                <Card key={i} className="p-4 md:p-5">
-                  <h3 className="font-semibold text-sm mb-1.5">{g.gap}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{g.description}</p>
-                </Card>
-              ))}
+              {gaps.map((g, i) => {
+                const tools = (g.affectedTools || "")
+                  .split(/[,;|]/)
+                  .map((t) => t.trim())
+                  .filter(Boolean);
+                return (
+                  <Card
+                    key={i}
+                    className="p-4 md:p-5 border-l-[3px] h-full flex flex-col"
+                    style={{ borderLeftColor: "hsl(var(--primary))" }}
+                  >
+                    <h3 className="font-bold text-base mb-1.5 leading-tight">{g.gap}</h3>
+                    <p className="text-sm text-muted-foreground mb-2">{g.description}</p>
+                    {g.opportunity && (
+                      <p className="text-sm text-success font-medium mb-3 flex-1">
+                        <span className="font-semibold">Opportunity:</span> {g.opportunity}
+                      </p>
+                    )}
+                    {!g.opportunity && <div className="flex-1" />}
+                    {tools.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/50">
+                        <span className="text-xs text-muted-foreground self-center">Affects:</span>
+                        {tools.map((t, ti) => (
+                          <Badge
+                            key={ti}
+                            variant="outline"
+                            className="text-xs font-normal bg-muted/50 text-muted-foreground"
+                          >
+                            {t}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </section>
 
-        {/* 9. Niche Opportunities — horizontal chips */}
+        {/* 9. Niche Opportunities — grid */}
         <section className="fade-in">
           <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
           <p className="text-sm text-muted-foreground mb-3">
-            Click any chip to research that niche.
+            Click any card to research that niche.
           </p>
           {analysis.niches.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {analysis.niches.map((n, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => searchNiche(n)}
-                  className="snap-start shrink-0 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm hover:border-primary/60 hover:shadow-sm transition-all"
+                  className="text-left p-3 rounded-lg border border-border bg-card hover:bg-primary/5 hover:border-primary/40 transition-all"
                   title={n.description}
                 >
-                  <span>🎯</span>
-                  <span className="font-medium">{n.niche}</span>
-                  <Badge variant="outline" className={`text-xs ${sizeChipVariant(n.size)}`}>
-                    {n.size}
-                  </Badge>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="font-semibold text-sm leading-tight">{n.niche}</span>
+                    <span
+                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${sizePillClass(n.size)}`}
+                    >
+                      {n.size}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{n.description}</p>
+                  <p className="text-[11px] text-primary mt-2 font-medium">Click to research →</p>
                 </button>
               ))}
             </div>
