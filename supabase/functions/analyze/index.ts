@@ -169,7 +169,7 @@ Return ONLY this JSON (no prose, no code fences):
     { "name": "App name", "description": "What it does and which pain point it solves", "uniqueAngle": "What makes it different from existing solutions" }
   ],
   "competitorGaps": [
-    { "gap": "specific gap title", "description": "what existing solutions are missing", "opportunity": "how to exploit this gap" }
+    { "gap": "specific gap title", "description": "what existing solutions are missing", "opportunity": "how to exploit this gap", "affectedTools": "comma-separated existing tools that fail at this, e.g. Notion, Trello, Slack" }
   ],
   "firstUserPersonas": [
     { "persona": "User type e.g. Burnt-out developer", "pain": "Their specific pain in one sentence", "willingToPay": "Yes" | "Maybe" | "No" }
