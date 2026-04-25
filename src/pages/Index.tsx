@@ -12,6 +12,8 @@ import { Slider } from "@/components/ui/slider";
 import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
+import { dbSaveSearch, dbSaveValidation } from "@/lib/db-history";
+import { useAuth } from "@/hooks/useAuth";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 
 const EXAMPLES = [
@@ -216,6 +218,7 @@ async function runValidate(opts: {
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [keyword, setKeyword] = useState("");
   const [keyword2, setKeyword2] = useState("");
   const [compareMode, setCompareMode] = useState(false);
