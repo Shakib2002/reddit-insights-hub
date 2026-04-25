@@ -43,8 +43,8 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyword.trim() || !appIdea.trim()) {
-      toast({ title: "Keyword and app idea are required", variant: "destructive" });
+    if (!keyword.trim()) {
+      toast({ title: "Keyword is required", variant: "destructive" });
       return;
     }
 
@@ -136,7 +136,9 @@ const Index = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="idea">Your app idea</Label>
+                <Label htmlFor="idea">
+                  Your app idea <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
                 <Input
                   id="idea"
                   placeholder="e.g. a bilingual AI mental coach for Bangladesh"
