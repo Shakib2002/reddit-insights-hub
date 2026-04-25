@@ -336,9 +336,14 @@ const Results = () => {
       );
       if (redditErr) throw redditErr;
 
-      // Merge with existing results, dedupe by link, keep highest score
-      const existing: RedditPost[] = inputs.redditPosts ?? [];
       const fresh: RedditPost[] = redditData?.results ?? [];
+      const existing: RedditPost[] = inputs.redditPosts ?? [];
+      setStep(
+        "score",
+        `Merging ${fresh.length} new + ${existing.length} existing posts`,
+      );
+
+      // Merge with existing results, dedupe by link, keep highest score
       const byLink = new Map<string, RedditPost>();
       for (const p of [...existing, ...fresh]) {
         if (!p?.link) continue;
@@ -349,6 +354,7 @@ const Results = () => {
       }
       const merged = [...byLink.values()].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
+      setStep("ai", `Analyzing ${merged.length} merged posts with Gemini`);
       const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
         "analyze",
         {
