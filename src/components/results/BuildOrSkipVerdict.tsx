@@ -11,24 +11,27 @@ interface Props {
   trend?: TrendSignal;
 }
 
-const verdictStyles: Record<BuildOrSkip["verdict"], { bg: string; text: string; border: string; emoji: string }> = {
+const verdictStyles: Record<BuildOrSkip["verdict"], { gradient: string; text: string; border: string; emoji: string; glow: string }> = {
   "BUILD IT": {
-    bg: "bg-green-500/15 dark:bg-green-500/20",
-    text: "text-green-700 dark:text-green-300",
-    border: "border-green-500/40",
+    gradient: "gradient-verdict-build",
+    text: "text-green-400",
+    border: "border-green-500/30",
     emoji: "✅",
+    glow: "shadow-[0_0_60px_-10px_rgba(34,197,94,0.45)]",
   },
   "NEEDS WORK": {
-    bg: "bg-yellow-500/15 dark:bg-yellow-500/20",
-    text: "text-yellow-700 dark:text-yellow-300",
-    border: "border-yellow-500/40",
+    gradient: "gradient-verdict-needs",
+    text: "text-yellow-400",
+    border: "border-yellow-500/30",
     emoji: "⚠️",
+    glow: "shadow-[0_0_60px_-10px_rgba(234,179,8,0.45)]",
   },
   "SKIP IT": {
-    bg: "bg-destructive/15 dark:bg-destructive/20",
-    text: "text-destructive",
-    border: "border-destructive/40",
+    gradient: "gradient-verdict-skip",
+    text: "text-red-400",
+    border: "border-red-500/30",
     emoji: "❌",
+    glow: "shadow-[0_0_60px_-10px_rgba(239,68,68,0.45)]",
   },
 };
 
@@ -87,11 +90,11 @@ Analyzed with RedditLens — free Reddit research tool`;
   return (
     <Card
       id="verdict"
-      className={`p-5 md:p-7 fade-in scroll-mt-32 ${style.bg} ${style.border} border-2`}
+      className={`p-5 md:p-7 fade-in scroll-mt-32 ${style.gradient} ${style.border} border ${style.glow}`}
     >
       <div className="flex flex-col items-center text-center gap-3">
         <div
-          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-lg md:text-xl font-bold ${style.text} bg-background/80 border ${style.border}`}
+          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-lg md:text-xl font-bold ${style.text} bg-background/70 backdrop-blur-sm border ${style.border}`}
         >
           <span aria-hidden="true">{style.emoji}</span>
           {verdict.verdict}

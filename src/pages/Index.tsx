@@ -456,47 +456,44 @@ const Index = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <Header />
 
-      {/* Decorative gradient blobs */}
+      {/* Decorative gradient blobs (subtle dark) */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-primary/20 blur-[120px] opacity-60" />
-        <div className="absolute top-40 -left-20 h-[400px] w-[400px] rounded-full bg-accent blur-[100px] opacity-40" />
-        <div className="absolute top-20 -right-20 h-[400px] w-[400px] rounded-full bg-primary/10 blur-[100px] opacity-50" />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[640px] w-[1000px] rounded-full bg-primary/[0.12] blur-[140px]" />
+        <div className="absolute top-40 -left-32 h-[420px] w-[420px] rounded-full bg-primary/[0.08] blur-[120px]" />
+        <div className="absolute top-20 -right-32 h-[420px] w-[420px] rounded-full bg-primary/[0.10] blur-[120px]" />
       </div>
 
-      <main className="container max-w-3xl py-12 md:py-16 relative z-10">
+      <main className="container max-w-3xl pt-16 md:pt-24 pb-12 md:pb-16 relative z-10">
         {/* Hero */}
         <div className="text-center mb-8 md:mb-10 fade-in">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium mb-5">
+          <div
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-medium mb-6 text-primary"
+            style={{ background: "rgba(255,69,0,0.1)", border: "1px solid rgba(255,69,0,0.3)" }}
+          >
             <Sparkles className="h-3.5 w-3.5" />
             Powered by AI · Real Reddit data
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-4 leading-[1.1]">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[64px] font-bold tracking-tight mb-4 leading-[1.05]">
             Find Real Problems
             <br />
-            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Worth Building
-            </span>
+            <span className="gradient-text-orange font-extrabold">Worth Building</span>
           </h1>
-          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-5 px-2">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-6 px-2 leading-relaxed">
             Validate startup ideas in 30 seconds. Get AI-powered pain points, revenue models, and competitor gaps from real Reddit discussions.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="text-primary">🔥</span> 2,400+ ideas analyzed
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="text-yellow-500">⭐</span> Founder favorite
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-success" /> Free forever
-            </span>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground/80">
+            <span>2,400+ ideas analyzed</span>
+            <span className="text-border">·</span>
+            <span>Founder favorite</span>
+            <span className="text-border">·</span>
+            <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-success" /> Free forever</span>
           </div>
         </div>
 
         {/* Search Card with gradient glow */}
-        <div className="relative fade-in" style={{ animationDelay: "80ms" }}>
-          <div aria-hidden className="absolute -inset-px rounded-[calc(var(--radius)+1px)] bg-gradient-to-br from-primary/30 via-primary/5 to-transparent blur-sm opacity-70" />
-          <Card className="relative p-4 sm:p-6 md:p-8 shadow-xl border-border/60 backdrop-blur-sm bg-card/95">
+        <div className="relative max-w-[640px] mx-auto fade-in" style={{ animationDelay: "80ms" }}>
+          <div aria-hidden className="absolute -inset-px rounded-[22px] bg-gradient-to-br from-primary/40 via-primary/10 to-transparent blur-md opacity-60" />
+          <Card className="relative p-5 sm:p-7 md:p-8 shadow-card-lg border-border bg-card rounded-[20px]">
           {loading ? (
             <LoadingSteps
               title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
@@ -804,7 +801,7 @@ const Index = () => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base h-12"
+                className="w-full gradient-orange text-white font-semibold text-[16px] h-[52px] rounded-xl shadow-glow-strong hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(255,69,0,0.5)] transition-all border-0"
               >
                 {validateMode ? <ShieldCheck className="h-5 w-5" /> : <Search className="h-5 w-5" />}
                 {validateMode
@@ -823,13 +820,13 @@ const Index = () => {
             <p className="text-sm text-muted-foreground mb-3 text-center">
               Try an example:
             </p>
-            <div className="flex flex-wrap gap-2 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center max-w-[640px] mx-auto">
               {EXAMPLES.map((ex) => (
                 <button
                   key={ex}
                   type="button"
                   onClick={() => setKeyword(ex)}
-                  className="px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all border border-border"
+                  className="px-3.5 py-1.5 rounded-full text-[13px] bg-card text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/[0.05] transition-colors border border-border"
                 >
                   {ex}
                 </button>

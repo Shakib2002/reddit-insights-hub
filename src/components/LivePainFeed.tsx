@@ -63,18 +63,15 @@ export function LivePainFeed({ onPick }: Props) {
   const visible = Array.from({ length: Math.min(5, items.length) }, (_, k) => items[(idx + k) % items.length]);
 
   return (
-    <section className="mt-10 fade-in" aria-label="Live Reddit pain feed">
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive" />
-        </span>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          🔴 Live from Reddit
+    <section className="mt-12 fade-in" aria-label="Live Reddit pain feed">
+      <div className="flex items-center justify-center gap-2.5 mb-5">
+        <span className="live-dot" />
+        <h2 className="text-[12px] font-medium text-muted-foreground uppercase tracking-[0.2em]">
+          Live from Reddit
         </h2>
       </div>
       <div
-        className={`grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 transition-opacity duration-200 ${fading ? "opacity-50" : "opacity-100"}`}
+        className={`grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 transition-opacity duration-200 ${fading ? "opacity-50" : "opacity-100"}`}
       >
         {visible.map((item, i) => (
           <button
@@ -83,12 +80,12 @@ export function LivePainFeed({ onPick }: Props) {
             onClick={() => onPick(item.topic)}
             className="text-left"
           >
-            <Card className="p-3 h-full hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
-              <p className="text-xs leading-relaxed line-clamp-3 text-foreground">
+            <Card className="p-4 h-full bg-card border-border hover:border-primary hover:-translate-y-0.5 hover:shadow-glow transition-all cursor-pointer rounded-xl">
+              <p className="text-[13px] leading-relaxed line-clamp-3 text-foreground italic">
                 "{item.quote}"
               </p>
-              <div className="flex items-center justify-between gap-2 mt-2">
-                <Badge variant="outline" className="text-[10px] font-normal truncate max-w-[60%]">
+              <div className="flex items-center justify-between gap-2 mt-3">
+                <Badge variant="outline" className="text-[10px] font-normal truncate max-w-[60%] border-primary/30 text-primary bg-primary/5">
                   {item.topic}
                 </Badge>
                 <Badge className={`text-[10px] ${signalCls(item.signal)}`}>{item.signal}</Badge>
