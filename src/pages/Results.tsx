@@ -19,6 +19,8 @@ import {
   MessageSquare,
   Search as SearchIcon,
   X,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,6 +33,7 @@ import {
 import type { ResultsPayload, Niche, RedditPost } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { saveToHistory } from "@/lib/history";
+import { downloadFile, reportToCsv, reportToMarkdown, safeFilename } from "@/lib/exporters";
 import { BlueprintDialog } from "@/components/BlueprintDialog";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 import { SectionNav } from "@/components/SectionNav";
