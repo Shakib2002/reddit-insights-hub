@@ -565,7 +565,9 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           />
           <StatCard
             label="Top Subreddit"
-            value={topSubreddit !== "—" ? `r/${topSubreddit}` : "—"}
+            value={topSubreddit !== "—" ? topSubreddit : "—"}
+            valueClassName="text-[12px] md:text-sm font-semibold leading-tight"
+            valueTitle={topSubreddit !== "—" ? `r/${topSubreddit}` : undefined}
           />
         </div>
 
