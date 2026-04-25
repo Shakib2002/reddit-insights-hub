@@ -15,6 +15,7 @@ import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 import { dbSaveSearch, dbSaveValidation } from "@/lib/db-history";
 import { useAuth } from "@/hooks/useAuth";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
+import { LivePainFeed } from "@/components/LivePainFeed";
 
 const EXAMPLES = [
   "mental health apps",
