@@ -237,6 +237,8 @@ const Results = () => {
   const [data, setData] = useState<ResultsPayload | null>(null);
   const [numResults, setNumResults] = useState(10);
   const [rerunning, setRerunning] = useState(false);
+  const [rerunStep, setRerunStep] = useState<RerunStepKey | "done" | null>(null);
+  const [rerunDetails, setRerunDetails] = useState<Partial<Record<RerunStepKey, string>>>({});
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const [evidenceSearch, setEvidenceSearch] = useState("");
   const [evidenceSignal, setEvidenceSignal] = useState<"all" | "High" | "Medium" | "Low">("all");
