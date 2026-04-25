@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
+import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 
 const EXAMPLES = [
   "mental health apps",
@@ -34,19 +35,50 @@ const SUBREDDIT_SUGGESTIONS = [
   "indiehackers",
 ];
 
-const LOADING_STAGES = [
-  { label: "Running 10 Reddit searches…", until: 55 },
-  { label: "Analyzing results…", until: 85 },
-  { label: "Building report…", until: 100 },
+type StepKey =
+  | "fetch"
+  | "score"
+  | "ai"
+  | "render"
+  | "validate-ai"
+  | "validate-score";
+
+const SEARCH_STEPS: { key: StepKey; label: string }[] = [
+  { key: "fetch", label: "Fetching Reddit posts (Serper search)" },
+  { key: "score", label: "Scoring & merging results" },
+  { key: "ai", label: "Calling AI to analyze discussions" },
+  { key: "render", label: "Rendering report" },
 ];
 
-const VALIDATE_LOADING_STAGES = [
-  { label: "Searching Reddit for evidence…", until: 35 },
-  { label: "Collecting discussions…", until: 55 },
-  { label: "Running idea validation…", until: 75 },
-  { label: "Scoring 6 dimensions…", until: 90 },
-  { label: "Building your validation report…", until: 100 },
+const VALIDATE_STEPS: { key: StepKey; label: string }[] = [
+  { key: "fetch", label: "Fetching Reddit evidence (Serper search)" },
+  { key: "score", label: "Scoring & merging results" },
+  { key: "validate-ai", label: "Running 6-dimension idea validation (AI)" },
+  { key: "render", label: "Rendering validation report" },
 ];
+
+function buildSteps(
+  defs: { key: StepKey; label: string }[],
+  activeKey: StepKey | "done" | null,
+  details: Partial<Record<StepKey, string>> = {},
+): LoadingStep[] {
+  if (activeKey === "done") {
+    return defs.map((d) => ({ ...d, status: "done", detail: details[d.key] }));
+  }
+  const activeIdx = activeKey ? defs.findIndex((d) => d.key === activeKey) : -1;
+  return defs.map((d, i) => ({
+    ...d,
+    status:
+      activeIdx === -1
+        ? "pending"
+        : i < activeIdx
+          ? "done"
+          : i === activeIdx
+            ? "active"
+            : "pending",
+    detail: details[d.key],
+  }));
+}
 
 async function runOneSearch(opts: {
   keyword: string;
@@ -55,7 +87,9 @@ async function runOneSearch(opts: {
   numResults: number;
   includeAllContext: boolean;
   language: "en" | "bn" | "both";
+  onStep?: (key: StepKey, detail?: string) => void;
 }): Promise<{ payload: ResultsPayload; lowData: boolean; totalFound: number }> {
+  opts.onStep?.("fetch", `Searching for "${opts.keyword}"`);
   const { data: redditData, error: redditErr } = await supabase.functions.invoke(
     "reddit-fetch",
     {
@@ -69,6 +103,10 @@ async function runOneSearch(opts: {
   );
   if (redditErr) throw redditErr;
 
+  const fetched = redditData?.results?.length ?? 0;
+  opts.onStep?.("score", `Merged & ranked ${fetched} unique posts`);
+
+  opts.onStep?.("ai", `Analyzing ${fetched} posts with Gemini`);
   const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
     "analyze",
     {
@@ -115,7 +153,9 @@ async function runValidate(opts: {
   subreddit: string;
   numResults: number;
   language: "en" | "bn" | "both";
+  onStep?: (key: StepKey, detail?: string) => void;
 }): Promise<{ payload: import("@/lib/types").ValidatePayload; lowData: boolean; totalFound: number }> {
+  opts.onStep?.("fetch", `Searching for "${opts.keyword}"`);
   const { data: redditData, error: redditErr } = await supabase.functions.invoke(
     "reddit-fetch",
     {
@@ -128,6 +168,10 @@ async function runValidate(opts: {
   );
   if (redditErr) throw redditErr;
 
+  const fetched = redditData?.results?.length ?? 0;
+  opts.onStep?.("score", `Merged & ranked ${fetched} unique posts`);
+
+  opts.onStep?.("validate-ai", `Scoring 6 dimensions across ${fetched} posts`);
   const { data: validateData, error: validateErr } = await supabase.functions.invoke(
     "validate",
     {
@@ -183,8 +227,15 @@ const Index = () => {
   const [includeAllContext, setIncludeAllContext] = useState(true);
   const [language, setLanguage] = useState<"en" | "bn" | "both">("en");
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [stageIdx, setStageIdx] = useState(0);
+  const [activeStep, setActiveStep] = useState<StepKey | "done" | null>(null);
+  const [stepDetails, setStepDetails] = useState<Partial<Record<StepKey, string>>>({});
+
+  const onStep = (key: StepKey, detail?: string) => {
+    setActiveStep(key);
+    if (detail !== undefined) {
+      setStepDetails((prev) => ({ ...prev, [key]: detail }));
+    }
+  };
 
   // Pre-fill from /results "search this niche" + ?mode=validate URL hint
   useEffect(() => {
@@ -200,30 +251,8 @@ const Index = () => {
     }
   }, []);
 
-  const activeStages = validateMode ? VALIDATE_LOADING_STAGES : LOADING_STAGES;
-
-  // Animate progress while loading + auto-advance stage label
-  useEffect(() => {
-    if (!loading) return;
-    const id = setInterval(() => {
-      setProgress((p) => {
-        const ceiling = activeStages[stageIdx]?.until ?? 95;
-        if (p >= ceiling) return p;
-        const delta = Math.max(0.4, (ceiling - p) * 0.06);
-        return Math.min(ceiling, p + delta);
-      });
-    }, 200);
-    return () => clearInterval(id);
-  }, [loading, stageIdx, activeStages]);
-
-  // Auto-advance label every ~2.5s while loading
-  useEffect(() => {
-    if (!loading) return;
-    const t = setInterval(() => {
-      setStageIdx((i) => Math.min(i + 1, activeStages.length - 2));
-    }, 2500);
-    return () => clearInterval(t);
-  }, [loading, activeStages.length]);
+  const stepDefs = validateMode ? VALIDATE_STEPS : SEARCH_STEPS;
+  const steps = buildSteps(stepDefs, activeStep, stepDetails);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,8 +274,8 @@ const Index = () => {
     }
 
     setLoading(true);
-    setProgress(0);
-    setStageIdx(0);
+    setActiveStep(null);
+    setStepDetails({});
 
     try {
       if (validateMode) {
@@ -256,8 +285,9 @@ const Index = () => {
           subreddit,
           numResults,
           language,
+          onStep,
         });
-        setStageIdx(VALIDATE_LOADING_STAGES.length - 1);
+        onStep("render", `Building report from ${result.totalFound} posts`);
         if (result.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -266,14 +296,17 @@ const Index = () => {
         }
         sessionStorage.setItem("redditlens_validate", JSON.stringify(result.payload));
         saveValidationToHistory(result.payload);
-        setProgress(100);
+        setActiveStep("done");
         navigate("/validate?mode=validate");
       } else if (compareMode) {
         const [left, right] = await Promise.all([
-          runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language }),
-          runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language }),
+          runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language, onStep }),
+          runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language, onStep }),
         ]);
-        setStageIdx(LOADING_STAGES.length - 1);
+        onStep(
+          "render",
+          `Building reports from ${left.totalFound + right.totalFound} posts`,
+        );
         if (left.lowData || right.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -288,7 +321,7 @@ const Index = () => {
         sessionStorage.setItem("redditlens_compare", JSON.stringify(compare));
         saveToHistory(left.payload);
         saveToHistory(right.payload);
-        setProgress(100);
+        setActiveStep("done");
         navigate("/compare");
       } else {
         const result = await runOneSearch({
@@ -298,8 +331,9 @@ const Index = () => {
           numResults,
           includeAllContext,
           language,
+          onStep,
         });
-        setStageIdx(LOADING_STAGES.length - 1);
+        onStep("render", `Building report from ${result.totalFound} posts`);
         if (result.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -308,7 +342,7 @@ const Index = () => {
         }
         sessionStorage.setItem("redditlens_results", JSON.stringify(result.payload));
         saveToHistory(result.payload);
-        setProgress(100);
+        setActiveStep("done");
         navigate("/results");
       }
     } catch (e) {
@@ -337,24 +371,10 @@ const Index = () => {
 
         <Card className="p-6 md:p-8 fade-in">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-10 gap-4">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="text-base md:text-lg font-medium text-center">
-                {LOADING_STAGES[stageIdx]?.label}
-              </p>
-              <div className="w-full max-w-sm">
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${Math.round(progress)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground mt-2 tabular-nums">
-                  <span>{Math.round(progress)}%</span>
-                  <span>{validateMode ? "Idea validation" : "10 parallel searches"}</span>
-                </div>
-              </div>
-            </div>
+            <LoadingSteps
+              title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
+              steps={steps}
+            />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Mode toggle */}

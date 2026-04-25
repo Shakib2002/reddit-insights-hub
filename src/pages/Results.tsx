@@ -32,6 +32,15 @@ import type { ResultsPayload, Niche, RedditPost } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { saveToHistory } from "@/lib/history";
 import { BlueprintDialog } from "@/components/BlueprintDialog";
+import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
+
+type RerunStepKey = "fetch" | "score" | "ai" | "render";
+const RERUN_STEPS: { key: RerunStepKey; label: string }[] = [
+  { key: "fetch", label: "Fetching 20 more Reddit posts" },
+  { key: "score", label: "Scoring & merging with existing posts" },
+  { key: "ai", label: "Re-analyzing with AI" },
+  { key: "render", label: "Rendering updated report" },
+];
 
 const MAX_RESULTS = 30;
 const RERUN_STEP = 10;
@@ -228,6 +237,8 @@ const Results = () => {
   const [data, setData] = useState<ResultsPayload | null>(null);
   const [numResults, setNumResults] = useState(10);
   const [rerunning, setRerunning] = useState(false);
+  const [rerunStep, setRerunStep] = useState<RerunStepKey | "done" | null>(null);
+  const [rerunDetails, setRerunDetails] = useState<Partial<Record<RerunStepKey, string>>>({});
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const [evidenceSearch, setEvidenceSearch] = useState("");
   const [evidenceSignal, setEvidenceSignal] = useState<"all" | "High" | "Medium" | "Low">("all");
@@ -298,9 +309,19 @@ const Results = () => {
   const nextCount = Math.min(MAX_RESULTS, numResults + RERUN_STEP);
   const canRerun = !inputs.loadedMore;
 
+  const setStep = (key: RerunStepKey | "done", detail?: string) => {
+    setRerunStep(key);
+    if (detail !== undefined && key !== "done") {
+      setRerunDetails((prev) => ({ ...prev, [key]: detail }));
+    }
+  };
+
   const rerunWithMore = async () => {
     setRerunning(true);
+    setRerunStep(null);
+    setRerunDetails({});
     try {
+      setStep("fetch", "Running 6 parallel searches");
       const { data: redditData, error: redditErr } = await supabase.functions.invoke(
         "reddit-fetch",
         {
@@ -315,9 +336,14 @@ const Results = () => {
       );
       if (redditErr) throw redditErr;
 
-      // Merge with existing results, dedupe by link, keep highest score
-      const existing: RedditPost[] = inputs.redditPosts ?? [];
       const fresh: RedditPost[] = redditData?.results ?? [];
+      const existing: RedditPost[] = inputs.redditPosts ?? [];
+      setStep(
+        "score",
+        `Merging ${fresh.length} new + ${existing.length} existing posts`,
+      );
+
+      // Merge with existing results, dedupe by link, keep highest score
       const byLink = new Map<string, RedditPost>();
       for (const p of [...existing, ...fresh]) {
         if (!p?.link) continue;
@@ -328,6 +354,7 @@ const Results = () => {
       }
       const merged = [...byLink.values()].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
+      setStep("ai", `Analyzing ${merged.length} merged posts with Gemini`);
       const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
         "analyze",
         {
@@ -386,10 +413,12 @@ const Results = () => {
         },
         analysis: analyzeData.analysis,
       };
+      setStep("render", `Building report from ${merged.length} posts`);
       sessionStorage.setItem("redditlens_results", JSON.stringify(updated));
       saveToHistory(updated);
       setData(updated);
       setNumResults(merged.length);
+      setStep("done");
       toast({
         title: "Report updated",
         description: `Re-analyzed with ${merged.length} merged Reddit posts.`,
@@ -984,23 +1013,41 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </div>
 
         {/* Secondary action: load more results */}
-        {canRerun ? (
+        {rerunning ? (
+          <Card className="p-4 md:p-6 fade-in no-print">
+            <LoadingSteps
+              title="Loading more Reddit data…"
+              steps={(() => {
+                const activeIdx =
+                  rerunStep === "done"
+                    ? RERUN_STEPS.length
+                    : rerunStep
+                      ? RERUN_STEPS.findIndex((s) => s.key === rerunStep)
+                      : -1;
+                return RERUN_STEPS.map((d, i): LoadingStep => ({
+                  key: d.key,
+                  label: d.label,
+                  detail: rerunDetails[d.key],
+                  status:
+                    activeIdx === -1
+                      ? "pending"
+                      : i < activeIdx
+                        ? "done"
+                        : i === activeIdx
+                          ? "active"
+                          : "pending",
+                }));
+              })()}
+            />
+          </Card>
+        ) : canRerun ? (
           <div className="flex justify-center fade-in no-print">
             <Button
               onClick={rerunWithMore}
               variant="outline"
-              disabled={rerunning}
               className="border-primary/40 text-primary hover:bg-primary/10"
             >
-              {rerunning ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading more Reddit data…
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" /> Load 20 more Reddit posts and re-analyze →
-                </>
-              )}
+              <Plus className="h-4 w-4" /> Load 20 more Reddit posts and re-analyze →
             </Button>
           </div>
         ) : (
