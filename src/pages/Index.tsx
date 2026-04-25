@@ -343,7 +343,7 @@ const Index = () => {
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mt-2 tabular-nums">
                   <span>{Math.round(progress)}%</span>
-                  <span>10 parallel searches</span>
+                  <span>{validateMode ? "Idea validation" : "10 parallel searches"}</span>
                 </div>
               </div>
             </div>
