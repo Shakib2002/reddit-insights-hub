@@ -78,25 +78,30 @@ export function FounderFitSection({
   };
 
   return (
-    <section id="fit" className="fade-in scroll-mt-32">
-      <Card className="p-4 md:p-5">
+    <section id="fit" className="reveal-up scroll-mt-32">
+      <Card className="p-5 md:p-6 transition-all">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="w-full flex items-center justify-between gap-2 text-left"
+          className="w-full flex items-center justify-between gap-2 text-left group"
           aria-expanded={open}
         >
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <User className="h-5 w-5 text-primary" />
-            Founder-Market Fit
-          </h2>
-          <ChevronDown className={`h-5 w-5 transition-transform ${open ? "rotate-180" : ""}`} />
+          {open ? (
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              Founder-Market Fit
+            </h2>
+          ) : (
+            <span className="text-base md:text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+              🎯 Check if this opportunity fits YOU →
+            </span>
+          )}
+          <ChevronDown
+            className={`h-5 w-5 transition-transform text-muted-foreground ${
+              open ? "rotate-180 text-primary" : ""
+            }`}
+          />
         </button>
-        {!open && (
-          <p className="text-sm text-muted-foreground mt-1">
-            Check how well your background fits this opportunity.
-          </p>
-        )}
 
         {open && (
           <div className="mt-4 space-y-4 fade-in">
@@ -128,7 +133,7 @@ export function FounderFitSection({
                 </Select>
               </div>
               <div className="sm:col-span-3">
-                <Button type="submit" disabled={loading} className="w-full">
+                <Button type="submit" disabled={loading} className="w-full h-11 btn-copy-orange">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check My Fit →"}
                 </Button>
               </div>

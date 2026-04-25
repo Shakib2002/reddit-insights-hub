@@ -25,27 +25,24 @@ export function WeeklyDigestSignup({ keyword }: { keyword: string }) {
     }
     setSubmitting(true);
 
-    // Save to database (cloud)
     const { error } = await supabase.from("email_subscriptions").insert({
       email: trimmed,
       keyword,
       user_id: user?.id ?? null,
     });
 
-    // Mirror to localStorage for backward compat
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       const arr = raw ? JSON.parse(raw) : [];
       arr.push({ email: trimmed, keyword, date: new Date().toISOString() });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
     } catch {
-      // ignore storage errors
+      // ignore
     }
 
     setSubmitting(false);
 
     if (error) {
-      // Duplicate (unique constraint) is fine — treat as success
       if (error.code === "23505") {
         setDone(true);
         toast({
@@ -69,42 +66,55 @@ export function WeeklyDigestSignup({ keyword }: { keyword: string }) {
     });
   };
 
+  if (done) {
+    return (
+      <Card
+        className="p-5 md:p-6 reveal-up no-print border-l-[3px] border-l-primary"
+        style={{ background: "rgba(255,69,0,0.05)" }}
+      >
+        <p className="text-base font-semibold text-success flex items-center gap-2">
+          ✅ You're subscribed!{" "}
+          <span className="font-normal text-muted-foreground">
+            New insights every Monday.
+          </span>
+        </p>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="p-4 md:p-5 border-l-[4px] border-l-primary fade-in no-print">
+    <Card
+      className="p-5 md:p-6 reveal-up no-print border-l-[3px] border-l-primary"
+      style={{ background: "rgba(255,69,0,0.05)" }}
+    >
       <div className="flex items-start gap-3">
         <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-base">
+          <h3 className="font-semibold text-base text-foreground">
             📧 Get weekly Reddit insights for "{keyword}"
           </h3>
           <p className="text-sm text-muted-foreground mt-0.5">
             New pain points and opportunities delivered every Monday.
           </p>
-          {done ? (
-            <p className="mt-3 text-sm text-success font-medium">
-              ✓ You're subscribed! We'll email you every Monday.
-            </p>
-          ) : (
-            <form onSubmit={submit} className="mt-3 flex flex-col sm:flex-row gap-2">
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                maxLength={120}
-                className="flex-1"
-                required
-                disabled={submitting}
-              />
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                {submitting ? "Saving..." : "Subscribe →"}
-              </Button>
-            </form>
-          )}
+          <form onSubmit={submit} className="mt-3 flex flex-col sm:flex-row gap-2">
+            <Input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              maxLength={120}
+              className="flex-1 h-11"
+              required
+              disabled={submitting}
+            />
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="h-11 px-6 btn-copy-orange"
+            >
+              {submitting ? "Saving..." : "Subscribe →"}
+            </Button>
+          </form>
         </div>
       </div>
     </Card>
