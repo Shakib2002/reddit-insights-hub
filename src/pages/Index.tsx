@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Search, ChevronDown, GitCompare, X } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
-import { saveToHistory } from "@/lib/history";
+import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 
 const EXAMPLES = [
   "mental health apps",
