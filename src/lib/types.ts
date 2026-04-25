@@ -1,8 +1,24 @@
+export type ReportLanguage = "en" | "bn" | "both";
+
 export interface PainPoint {
   title: string;
   description: string;
   source: string;
   signal: "High" | "Medium" | "Low";
+  link?: string;
+  sourceIndex?: number;
+}
+
+export interface Niche {
+  niche: string;
+  description: string;
+  size: "Large" | "Medium" | "Small";
+}
+
+export interface Sentiment {
+  positive: number;
+  neutral: number;
+  negative: number;
 }
 
 export interface Analysis {
@@ -13,9 +29,10 @@ export interface Analysis {
   competitorGaps: { gap: string; description: string }[];
   firstUserPersonas: { persona: string; pain: string }[];
   recommendedSubreddits: string[];
+  sentiment: Sentiment;
+  sentimentSummary: string;
+  niches: Niche[];
 }
-
-export type ReportLanguage = "en" | "bn" | "both";
 
 export interface SearchInputs {
   keyword: string;
@@ -29,4 +46,28 @@ export interface SearchInputs {
 export interface ResultsPayload {
   inputs: SearchInputs;
   analysis: Analysis;
+}
+
+export interface ComparePayload {
+  mode: "compare";
+  left: ResultsPayload;
+  right: ResultsPayload;
+}
+
+export interface Blueprint {
+  mvpFeatures: string[];
+  techStack: string[];
+  targetUser: string;
+  revenueModel: string;
+  timeToMVP: string;
+  firstMilestone: string;
+}
+
+export interface HistoryItem {
+  id: string;
+  keyword: string;
+  timestamp: number;
+  painScore: number;
+  summary: string;
+  payload: ResultsPayload;
 }
