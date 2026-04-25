@@ -126,7 +126,13 @@ const StatCard = ({
       )}
     </div>
     <div className="text-2xl md:text-3xl font-bold tabular-nums mt-1 truncate">{value}</div>
-    {sub && <div className="text-xs text-destructive mt-0.5 line-clamp-2">{sub}</div>}
+    {sub && (
+      <div
+        className={`text-xs mt-0.5 ${badge ? "text-destructive line-clamp-2" : "text-muted-foreground truncate"}`}
+      >
+        {sub}
+      </div>
+    )}
   </div>
 );
 
