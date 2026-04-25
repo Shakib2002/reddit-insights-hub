@@ -255,6 +255,48 @@ const Index = () => {
     }
   }, []);
 
+  const runQuickSearch = async (topic: string) => {
+    setKeyword(topic);
+    setValidateMode(false);
+    setCompareMode(false);
+    setLoading(true);
+    setActiveStep(null);
+    setStepDetails({});
+    try {
+      const result = await runOneSearch({
+        keyword: topic,
+        appIdea: "",
+        subreddit: "",
+        numResults,
+        includeAllContext,
+        language,
+        onStep,
+      });
+      onStep("render", `Building report from ${result.totalFound} posts`);
+      if (result.lowData) {
+        toast({
+          title: "Limited Reddit data found",
+          description: `Only ${result.totalFound} relevant Reddit results — analysis may be less accurate.`,
+        });
+      }
+      sessionStorage.setItem("redditlens_results", JSON.stringify(result.payload));
+      saveToHistory(result.payload);
+      if (user) {
+        dbSaveSearch(user.id, result.payload).catch(() => {});
+      }
+      setActiveStep("done");
+      navigate("/results");
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "Analysis failed",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
   const stepDefs = validateMode ? VALIDATE_STEPS : SEARCH_STEPS;
   const steps = buildSteps(stepDefs, activeStep, stepDetails);
 
