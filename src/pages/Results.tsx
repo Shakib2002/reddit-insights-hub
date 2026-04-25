@@ -411,7 +411,22 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           style={{ background: "hsl(16 100% 97%)" }}
         >
           <StatCard label="Pain Score" value={`${score}/100`} />
-          <StatCard label="Posts Found" value={totalFound} />
+          <StatCard
+            label="Posts Found"
+            value={totalFound}
+            sub={
+              totalFound === 0 && inputs.debug?.apiKeySet === false
+                ? "⚠ API Key Issue? Check SERPER_API_KEY env var"
+                : totalFound === 0 && inputs.serperOk === false
+                ? "⚠ API Key Issue? Serper rejected the request"
+                : undefined
+            }
+            badge={
+              totalFound === 0 && (inputs.debug?.apiKeySet === false || inputs.serperOk === false)
+                ? "API Key Issue?"
+                : undefined
+            }
+          />
           <StatCard
             label="Avg Signal"
             value={avgSignalLabel(avgSig)}
