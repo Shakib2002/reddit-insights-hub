@@ -166,9 +166,11 @@ async function runOneSearch(opts: {
   );
   if (analyzeErr) {
     const msg = (analyzeErr as any).context?.body
-      ? JSON.parse((analyzeErr as any).context.body).error
+      ? (() => { try { return JSON.parse((analyzeErr as any).context.body).error; } catch { return analyzeErr.message; } })()
       : analyzeErr.message;
-    throw new Error(msg);
+    const err = new Error(msg);
+    (err as any)._stage = "ai";
+    throw err;
   }
 
   return {
