@@ -906,6 +906,60 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           )}
         </section>
 
+        {/* 11b. View Source Posts */}
+        <section className="fade-in">
+          <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
+            <ExternalLink className="h-5 w-5 text-primary" />
+            View Source Posts
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Top {Math.min(10, redditPosts.length)} Reddit posts the analysis was built from, ranked
+            by signal score.
+          </p>
+          {redditPosts.length === 0 ? (
+            <EmptyPlaceholder text="Not enough Reddit data found for this section" />
+          ) : (
+            <ol className="space-y-2">
+              {[...redditPosts]
+                .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+                .slice(0, 10)
+                .map((post, i) => {
+                  const sig = post.score >= 6 ? "High" : post.score >= 3 ? "Medium" : "Low";
+                  return (
+                    <li key={`${post.link}-${i}`}>
+                      <Card className="p-3 md:p-4 hover:border-primary/40 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <span className="text-sm font-bold text-muted-foreground tabular-nums w-6 shrink-0 pt-0.5">
+                            {i + 1}.
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <a
+                              href={post.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-sm hover:text-primary hover:underline inline-flex items-start gap-1.5"
+                            >
+                              <span className="line-clamp-2">{post.title}</span>
+                              <ExternalLink className="h-3 w-3 mt-1 shrink-0" aria-hidden="true" />
+                            </a>
+                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                              <Badge variant="outline" className="text-xs font-normal">
+                                {post.subreddit}
+                              </Badge>
+                              <Badge className={`text-xs ${signalVariant(sig)}`}>
+                                {sig} · signal {post.score}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </li>
+                  );
+                })}
+            </ol>
+          )}
+        </section>
+
         {/* 12. Action Bar */}
         <div className="flex flex-wrap gap-2 pt-4 fade-in no-print">
           <Button onClick={() => navigate("/")} variant="outline" className="flex-1 min-w-[140px]">
