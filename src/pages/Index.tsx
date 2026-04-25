@@ -457,11 +457,79 @@ const Index = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <Header />
 
-      {/* Decorative gradient blobs (subtle dark) */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[640px] w-[1000px] rounded-full bg-primary/[0.12] blur-[140px]" />
-        <div className="absolute top-40 -left-32 h-[420px] w-[420px] rounded-full bg-primary/[0.08] blur-[120px]" />
-        <div className="absolute top-20 -right-32 h-[420px] w-[420px] rounded-full bg-primary/[0.10] blur-[120px]" />
+      {/* Subtle gradient fade below navbar */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[60px] h-24 navbar-fade z-0" />
+
+      {/* Layered hero background */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        {/* Radial glow — top center orange */}
+        <div
+          className="absolute -top-40 left-1/2 -translate-x-1/2 h-[700px] w-[1100px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(255,69,0,0.18), rgba(255,69,0,0))",
+            filter: "blur(40px)",
+          }}
+        />
+        {/* Radial glow — bottom left blue tint */}
+        <div
+          className="absolute top-[60%] -left-40 h-[520px] w-[520px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(59,130,246,0.10), rgba(59,130,246,0))",
+            filter: "blur(60px)",
+          }}
+        />
+        {/* Radial glow — right side */}
+        <div
+          className="absolute top-[20%] -right-40 h-[520px] w-[520px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(255,69,0,0.10), rgba(255,69,0,0))",
+            filter: "blur(70px)",
+          }}
+        />
+
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 hero-bg-grid opacity-60" />
+
+        {/* Noise texture overlay */}
+        <div className="absolute inset-0 hero-bg-noise" />
+
+        {/* Floating orbs */}
+        <div
+          className="orb orb-1"
+          style={{
+            top: "10%",
+            left: "-80px",
+            height: "300px",
+            width: "300px",
+            background: "rgba(255,69,0,0.04)",
+            filter: "blur(80px)",
+          }}
+        />
+        <div
+          className="orb orb-2"
+          style={{
+            bottom: "-100px",
+            right: "-120px",
+            height: "400px",
+            width: "400px",
+            background: "rgba(120,60,255,0.04)",
+            filter: "blur(100px)",
+          }}
+        />
+        <div
+          className="orb orb-3"
+          style={{
+            top: "45%",
+            right: "10%",
+            height: "200px",
+            width: "200px",
+            background: "rgba(255,69,0,0.03)",
+            filter: "blur(60px)",
+          }}
+        />
       </div>
 
       <main className="container max-w-3xl pt-16 md:pt-24 pb-12 md:pb-16 relative z-10">
@@ -494,7 +562,7 @@ const Index = () => {
         {/* Search Card with gradient glow */}
         <div className="relative max-w-[640px] mx-auto fade-in" style={{ animationDelay: "80ms" }}>
           <div aria-hidden className="absolute -inset-px rounded-[22px] bg-gradient-to-br from-primary/40 via-primary/10 to-transparent blur-md opacity-60" />
-          <Card className="relative p-5 sm:p-7 md:p-8 shadow-card-lg border-border bg-card rounded-[20px]">
+          <Card className="relative p-5 sm:p-7 md:p-8 search-card-glow border-border bg-card rounded-[20px]">
           {(
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Mode toggle */}
@@ -845,9 +913,13 @@ const Index = () => {
         )}
       </main>
 
+      {/* Section divider */}
+      {!loading && <div aria-hidden className="h-px section-divider relative z-10" />}
+
       {/* Feature highlights */}
       {!loading && (
-        <section className="container max-w-5xl py-16 md:py-20 relative z-10">
+        <section className="features-bg py-16 md:py-20 relative z-10">
+          <div className="container max-w-5xl">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">
               Everything you need to validate ideas
@@ -886,8 +958,11 @@ const Index = () => {
               </Card>
             ))}
           </div>
+          </div>
         </section>
       )}
+
+      {!loading && <div aria-hidden className="h-px section-divider relative z-10" />}
 
       {/* How it works */}
       {!loading && (
@@ -928,7 +1003,8 @@ const Index = () => {
 
       {/* Stats strip */}
       {!loading && (
-        <section className="container max-w-5xl py-16 md:py-20">
+        <section className="stats-bg py-16 md:py-20 relative z-10">
+          <div className="container max-w-5xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {[
               { v: "10M+", l: "Reddit posts indexed" },
@@ -943,6 +1019,7 @@ const Index = () => {
                 <div className="text-xs md:text-sm text-muted-foreground mt-1">{s.l}</div>
               </div>
             ))}
+          </div>
           </div>
         </section>
       )}
