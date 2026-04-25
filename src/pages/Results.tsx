@@ -296,7 +296,7 @@ const Results = () => {
   const { inputs, analysis } = data;
 
   const nextCount = Math.min(MAX_RESULTS, numResults + RERUN_STEP);
-  const canRerun = nextCount > numResults;
+  const canRerun = !inputs.loadedMore;
 
   const rerunWithMore = async () => {
     setRerunning(true);
@@ -307,18 +307,32 @@ const Results = () => {
           body: {
             keyword: inputs.keyword,
             subreddit: inputs.subreddit,
-            numResults: nextCount,
+            numResults: 20,
+            extraQueries: true,
             includeAllContext: true,
           },
         },
       );
       if (redditErr) throw redditErr;
 
+      // Merge with existing results, dedupe by link, keep highest score
+      const existing: RedditPost[] = inputs.redditPosts ?? [];
+      const fresh: RedditPost[] = redditData?.results ?? [];
+      const byLink = new Map<string, RedditPost>();
+      for (const p of [...existing, ...fresh]) {
+        if (!p?.link) continue;
+        const prev = byLink.get(p.link);
+        if (!prev || (p.score ?? 0) > (prev.score ?? 0)) {
+          byLink.set(p.link, p);
+        }
+      }
+      const merged = [...byLink.values()].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
       const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
         "analyze",
         {
           body: {
-            results: redditData?.results ?? [],
+            results: merged,
             keyword: inputs.keyword,
             appIdea: inputs.appIdea,
             language: inputs.language ?? "en",
@@ -332,27 +346,53 @@ const Results = () => {
         throw new Error(msg);
       }
 
+      // Recompute effective subreddits + avg score from merged set
+      const subCounts = new Map<string, number>();
+      for (const r of merged) {
+        const clean = (r.subreddit || "").replace(/^r\//, "");
+        if (!clean || clean === "reddit") continue;
+        subCounts.set(clean, (subCounts.get(clean) ?? 0) + 1);
+      }
+      const effectiveSubreddits = [...subCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([s]) => s);
+      const avgScore =
+        merged.length > 0
+          ? Math.round((merged.reduce((s, r) => s + (r.score ?? 0), 0) / merged.length) * 10) / 10
+          : 0;
+
       const updated: ResultsPayload = {
         inputs: {
           ...inputs,
-          numResults: nextCount,
-          effectiveSubreddits:
-            redditData?.effectiveSubreddits ?? inputs.effectiveSubreddits ?? [],
-          rationale: redditData?.rationale ?? inputs.rationale,
-          redditPosts: redditData?.results ?? inputs.redditPosts ?? [],
-          totalFound: Number(redditData?.totalFound ?? redditData?.results?.length ?? 0),
+          numResults: merged.length,
+          loadedMore: true,
+          effectiveSubreddits,
+          rationale: {
+            ...(inputs.rationale ?? {
+              summary: "",
+              topSignals: [],
+              multiQueryHits: 0,
+              avgScore: 0,
+              totalQueries: 0,
+            }),
+            avgScore,
+            summary: `Analyzed ${merged.length} merged Reddit posts after loading more.`,
+          },
+          redditPosts: merged,
+          totalFound: merged.length,
           serperOk: redditData?.serperOk !== false,
-        debug: redditData?.debug,
+          debug: redditData?.debug,
         },
         analysis: analyzeData.analysis,
       };
       sessionStorage.setItem("redditlens_results", JSON.stringify(updated));
       saveToHistory(updated);
       setData(updated);
-      setNumResults(nextCount);
+      setNumResults(merged.length);
       toast({
         title: "Report updated",
-        description: `Re-analyzed with ${nextCount} Reddit results.`,
+        description: `Re-analyzed with ${merged.length} merged Reddit posts.`,
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
