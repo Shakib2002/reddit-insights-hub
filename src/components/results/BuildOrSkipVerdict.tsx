@@ -90,11 +90,11 @@ Analyzed with RedditLens — free Reddit research tool`;
   return (
     <Card
       id="verdict"
-      className={`p-5 md:p-7 fade-in scroll-mt-32 ${style.bg} ${style.border} border-2`}
+      className={`p-5 md:p-7 fade-in scroll-mt-32 ${style.gradient} ${style.border} border ${style.glow}`}
     >
       <div className="flex flex-col items-center text-center gap-3">
         <div
-          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-lg md:text-xl font-bold ${style.text} bg-background/80 border ${style.border}`}
+          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-lg md:text-xl font-bold ${style.text} bg-background/70 backdrop-blur-sm border ${style.border}`}
         >
           <span aria-hidden="true">{style.emoji}</span>
           {verdict.verdict}
