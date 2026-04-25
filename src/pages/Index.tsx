@@ -178,35 +178,44 @@ const Index = () => {
   const [progress, setProgress] = useState(0);
   const [stageIdx, setStageIdx] = useState(0);
 
-  // Pre-fill from /results "search this niche" via sessionStorage
+  // Pre-fill from /results "search this niche" + ?mode=validate URL hint
   useEffect(() => {
     const prefill = sessionStorage.getItem("redditlens_prefill");
     if (prefill) {
       setKeyword(prefill);
       sessionStorage.removeItem("redditlens_prefill");
     }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "validate") {
+      setValidateMode(true);
+      setCompareMode(false);
+    }
   }, []);
+
+  const activeStages = validateMode ? VALIDATE_LOADING_STAGES : LOADING_STAGES;
 
   // Animate progress while loading + auto-advance stage label
   useEffect(() => {
     if (!loading) return;
     const id = setInterval(() => {
       setProgress((p) => {
-        const ceiling = LOADING_STAGES[stageIdx]?.until ?? 95;
+        const ceiling = activeStages[stageIdx]?.until ?? 95;
         if (p >= ceiling) return p;
         const delta = Math.max(0.4, (ceiling - p) * 0.06);
         return Math.min(ceiling, p + delta);
       });
     }, 200);
     return () => clearInterval(id);
-  }, [loading, stageIdx]);
+  }, [loading, stageIdx, activeStages]);
 
-  // Auto-advance label: searches → analyzing after ~3.5s
+  // Auto-advance label every ~2.5s while loading
   useEffect(() => {
     if (!loading) return;
-    const t = setTimeout(() => setStageIdx((i) => Math.max(i, 1)), 3500);
-    return () => clearTimeout(t);
-  }, [loading]);
+    const t = setInterval(() => {
+      setStageIdx((i) => Math.min(i + 1, activeStages.length - 2));
+    }, 2500);
+    return () => clearInterval(t);
+  }, [loading, activeStages.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
