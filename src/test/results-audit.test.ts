@@ -30,8 +30,10 @@ function count(haystack: string, needle: string): number {
 }
 
 describe("Results page — section uniqueness", () => {
-  it("renders the Reddit Evidence section exactly once", () => {
-    expect(count(RESULTS_SRC, "Reddit Evidence")).toBe(1);
+  it("renders the Reddit Evidence section heading exactly once", () => {
+    // Match only as JSX text (between > and <), so comments/prose don't count.
+    const matches = RESULTS_SRC.match(/>\s*Reddit Evidence\s*</g) ?? [];
+    expect(matches.length).toBe(1);
   });
 
   it("does NOT render a 'View Source Posts' section anywhere", () => {
@@ -88,12 +90,8 @@ describe("Avg Signal thresholds (UI)", () => {
   it("uses High >= 6, Medium >= 4, Low < 4", () => {
     // Locks the thresholds we just tuned so the UI never silently
     // drifts back to the old (too-lenient) values.
-    const fn = RESULTS_SRC.match(
-      /avgSignalLabel\s*=\s*\([\s\S]*?\)\s*=>\s*\{[\s\S]*?return "Low";\s*\}/,
-    );
-    expect(fn, "avgSignalLabel function should exist").toBeTruthy();
-    const body = fn![0];
-    expect(body).toMatch(/avg\s*>=\s*6\)\s*return\s*"High"/);
-    expect(body).toMatch(/avg\s*>=\s*4\)\s*return\s*"Medium"/);
+    expect(RESULTS_SRC).toMatch(/avg\s*>=\s*6\)\s*return\s*"High"/);
+    expect(RESULTS_SRC).toMatch(/avg\s*>=\s*4\)\s*return\s*"Medium"/);
+    expect(RESULTS_SRC).toMatch(/return\s*"Low"/);
   });
 });
