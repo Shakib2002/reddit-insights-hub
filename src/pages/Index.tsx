@@ -467,10 +467,22 @@ const Index = () => {
       }
     } catch (e) {
       console.error(e);
+      const stage = (e as any)?._stage ?? (validateMode ? "validate" : "unknown");
+      const friendly = toFriendlyError(e, stage);
       toast({
-        title: validateMode ? "Validation failed" : "Analysis failed",
-        description: e instanceof Error ? e.message : "Please try again.",
+        title: friendly.title,
+        description: friendly.hint
+          ? `${friendly.description} ${friendly.hint}`
+          : friendly.description,
         variant: "destructive",
+        action: friendly.retryable ? (
+          <ToastAction
+            altText="Retry"
+            onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+          >
+            Retry
+          </ToastAction>
+        ) : undefined,
       });
       setLoading(false);
     }
