@@ -518,6 +518,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                 ? "API Key Issue?"
                 : undefined
             }
+            successBadge={inputs.loadedMore ? "Updated" : undefined}
           />
           <StatCard
             label="Avg Signal"
