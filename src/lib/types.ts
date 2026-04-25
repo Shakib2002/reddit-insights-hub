@@ -35,6 +35,35 @@ export interface Persona {
   willingToPay?: "Yes" | "Maybe" | "No";
 }
 
+export interface BuildOrSkipFactors {
+  marketSize: number;
+  painIntensity: number;
+  competitionGap: number;
+  monetization: number;
+  timing: number;
+}
+
+export interface BuildOrSkip {
+  verdict: "BUILD IT" | "NEEDS WORK" | "SKIP IT";
+  reason: string;
+  confidence: number;
+  factors: BuildOrSkipFactors;
+}
+
+export interface TrendSignal {
+  direction: "Growing" | "Stable" | "Declining";
+  reason: string;
+}
+
+export interface RevenueModel {
+  type: "Freemium" | "B2B SaaS" | "Marketplace" | "One-time";
+  name: string;
+  description: string;
+  mrrRange: string;
+  redditEvidence: string;
+  recommended: boolean;
+}
+
 export interface Analysis {
   summary: string;
   ideaMatchScore: number;
@@ -46,6 +75,9 @@ export interface Analysis {
   sentiment: Sentiment;
   sentimentSummary: string;
   niches: Niche[];
+  buildOrSkip?: BuildOrSkip;
+  trend?: TrendSignal;
+  revenueModels?: RevenueModel[];
 }
 
 export interface SearchRationale {

@@ -37,6 +37,12 @@ import { downloadFile, reportToCsv, reportToMarkdown, safeFilename } from "@/lib
 import { BlueprintDialog } from "@/components/BlueprintDialog";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 import { SectionNav } from "@/components/SectionNav";
+import { BuildOrSkipVerdict } from "@/components/results/BuildOrSkipVerdict";
+import { TrendStatCard } from "@/components/results/TrendStatCard";
+import { RevenueModelsSection } from "@/components/results/RevenueModelsSection";
+import { CompetitorIntelSection } from "@/components/results/CompetitorIntelSection";
+import { FounderFitSection } from "@/components/results/FounderFitSection";
+import { WeeklyDigestSignup } from "@/components/results/WeeklyDigestSignup";
 
 type RerunStepKey = "fetch" | "score" | "ai" | "render";
 const RERUN_STEPS: { key: RerunStepKey; label: string }[] = [
@@ -553,9 +559,19 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </div>
         </div>
 
+        {/* 0. Build or Skip Verdict (NEW) */}
+        {analysis.buildOrSkip && (
+          <BuildOrSkipVerdict
+            verdict={analysis.buildOrSkip}
+            keyword={inputs.keyword}
+            painScore={score}
+            trend={analysis.trend}
+          />
+        )}
+
         {/* 1. Hero stats bar */}
         <div
-          className="rounded-xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-4 gap-3 fade-in"
+          className="rounded-xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-5 gap-3 fade-in"
           style={{ background: "hsl(16 100% 97%)" }}
         >
           <StatCard label="Pain Score" value={`${score}/100`} />
@@ -587,6 +603,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             valueClassName="text-[12px] md:text-sm font-semibold leading-tight"
             valueTitle={topSubreddit !== "—" ? `r/${topSubreddit}` : undefined}
           />
+          <TrendStatCard trend={analysis.trend} />
         </div>
 
         {/* 2. Warning banner if no Reddit data */}
@@ -606,14 +623,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
 
         <SectionNav
           items={[
+            ...(analysis.buildOrSkip ? [{ id: "verdict", label: "Verdict" }] : []),
             { id: "summary", label: "Summary" },
             { id: "pain-points", label: "Pain Points" },
             { id: "evidence", label: "Evidence" },
             { id: "sentiment", label: "Sentiment" },
             { id: "opportunities", label: "Opportunities" },
             { id: "gaps", label: "Gaps" },
+            ...(analysis.revenueModels && analysis.revenueModels.length > 0 ? [{ id: "revenue", label: "Revenue" }] : []),
+            { id: "competitor", label: "Competitor" },
             { id: "niches", label: "Niches" },
             { id: "first-users", label: "First Users" },
+            { id: "fit", label: "Fit" },
           ]}
         />
 
@@ -890,6 +911,17 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           )}
         </section>
 
+        {/* 8b. Revenue Models (NEW) */}
+        {analysis.revenueModels && analysis.revenueModels.length > 0 && (
+          <RevenueModelsSection models={analysis.revenueModels} />
+        )}
+
+        {/* 8c. Competitor Intelligence (NEW) */}
+        <CompetitorIntelSection
+          keyword={inputs.keyword}
+          existingResults={redditPosts}
+        />
+
         {/* 9. Niche Opportunities — grid */}
         <section id="niches" className="fade-in scroll-mt-32">
           <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
@@ -951,6 +983,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           )}
         </section>
 
+        {/* 10b. Founder-Market Fit (NEW, collapsible) */}
+        <FounderFitSection
+          keyword={inputs.keyword}
+          painPoints={analysis.painPoints}
+          opportunities={analysis.competitorGaps}
+        />
+
         {/* 11. Recommended Subreddits */}
         <section className="fade-in no-print">
           <h2 className="text-xl font-semibold mb-4">Recommended Subreddits</h2>
@@ -978,6 +1017,9 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* (View Source Posts removed — Reddit Evidence section above already lists them) */}
+
+        {/* 11b. Weekly Digest Signup (NEW) */}
+        <WeeklyDigestSignup keyword={inputs.keyword} />
 
         {/* 12. Action Bar */}
         <div className="flex flex-wrap gap-2 pt-4 fade-in no-print">

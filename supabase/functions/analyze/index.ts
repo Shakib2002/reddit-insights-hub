@@ -52,6 +52,57 @@ function normalizeSentiment(raw: any) {
   return { positive: p, neutral: n, negative: 100 - p - n };
 }
 
+function clamp10(n: any): number {
+  const v = Number(n) || 0;
+  return Math.max(0, Math.min(10, Math.round(v * 10) / 10));
+}
+
+function normalizeBuildOrSkip(raw: any) {
+  if (!raw) return undefined;
+  const factors = {
+    marketSize: clamp10(raw.factors?.marketSize),
+    painIntensity: clamp10(raw.factors?.painIntensity),
+    competitionGap: clamp10(raw.factors?.competitionGap),
+    monetization: clamp10(raw.factors?.monetization),
+    timing: clamp10(raw.factors?.timing),
+  };
+  const avg =
+    (factors.marketSize + factors.painIntensity + factors.competitionGap + factors.monetization + factors.timing) / 5;
+  let verdict: "BUILD IT" | "NEEDS WORK" | "SKIP IT";
+  if (avg >= 7) verdict = "BUILD IT";
+  else if (avg >= 5) verdict = "NEEDS WORK";
+  else verdict = "SKIP IT";
+  const allowed = ["BUILD IT", "NEEDS WORK", "SKIP IT"];
+  if (allowed.includes(raw.verdict)) verdict = raw.verdict;
+  return {
+    verdict,
+    reason: String(raw.reason ?? "").slice(0, 400),
+    confidence: clampPct(raw.confidence ?? 70),
+    factors,
+  };
+}
+
+function normalizeTrend(raw: any) {
+  if (!raw) return undefined;
+  const dir = ["Growing", "Stable", "Declining"].includes(raw.direction) ? raw.direction : "Stable";
+  return { direction: dir, reason: String(raw.reason ?? "").slice(0, 300) };
+}
+
+function normalizeRevenueModels(raw: any): any[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const types = ["Freemium", "B2B SaaS", "Marketplace", "One-time"];
+  const items = raw.slice(0, 3).map((m: any) => ({
+    type: types.includes(m.type) ? m.type : "Freemium",
+    name: String(m.name ?? "").slice(0, 80),
+    description: String(m.description ?? "").slice(0, 280),
+    mrrRange: String(m.mrrRange ?? "").slice(0, 40),
+    redditEvidence: String(m.redditEvidence ?? "").slice(0, 200),
+    recommended: !!m.recommended,
+  }));
+  if (items.length && !items.some((m: any) => m.recommended)) items[0].recommended = true;
+  return items;
+}
+
 function normalizeAnalysis(raw: any) {
   // Pain score from new prompt; fall back to ideaMatchScore for compat
   const painScore = clampPct(raw.painScore ?? raw.ideaMatchScore ?? 0);
@@ -101,6 +152,9 @@ function normalizeAnalysis(raw: any) {
       description: n.description ?? "",
       size: normEnum(n.size, ["Large", "Medium", "Small"], "Medium"),
     })),
+    buildOrSkip: normalizeBuildOrSkip(raw.buildOrSkip),
+    trend: normalizeTrend(raw.trend),
+    revenueModels: normalizeRevenueModels(raw.revenueModels),
   };
 }
 
@@ -193,7 +247,33 @@ Return ONLY this JSON (no prose, no code fences):
   "niches": [
     { "niche": "specific sub-niche keyword phrase searchable on Reddit", "description": "1 sentence on why this niche is underserved", "size": "Large" | "Medium" | "Small" }
   ],
-  "recommendedSubreddits": ["string without r/ prefix"]
+  "recommendedSubreddits": ["string without r/ prefix"],
+  "buildOrSkip": {
+    "verdict": "BUILD IT" | "NEEDS WORK" | "SKIP IT",
+    "reason": "ONE bold sentence explaining the verdict",
+    "confidence": <number 0-100>,
+    "factors": {
+      "marketSize": <0-10>,
+      "painIntensity": <0-10>,
+      "competitionGap": <0-10>,
+      "monetization": <0-10>,
+      "timing": <0-10>
+    }
+  },
+  "trend": {
+    "direction": "Growing" | "Stable" | "Declining",
+    "reason": "one sentence on why this topic is trending in that direction on Reddit"
+  },
+  "revenueModels": [
+    {
+      "type": "Freemium" | "B2B SaaS" | "Marketplace" | "One-time",
+      "name": "short model name",
+      "description": "2 lines on how it works for THIS topic",
+      "mrrRange": "e.g. $2K - $15K/mo",
+      "redditEvidence": "e.g. 12 Reddit users mentioned willingness to pay for this",
+      "recommended": true | false
+    }
+  ]
 }
 
 Rules:
@@ -202,7 +282,10 @@ Rules:
 - You MUST return EXACTLY 4 competitor gaps (5 maximum). Never return fewer than 4. If you cannot find 4 from the data, use your knowledge of the topic to fill in the rest.
 - Return 4 to 6 niche opportunities. Cover a range of sizes: at least one Large, one Medium, one Small.
 - Provide 3 app opportunities, 3-4 personas, and 4-6 recommended subreddits.
-- For each competitor gap, name the SPECIFIC existing tools (like Notion, Trello, Slack, Obsidian) in "affectedTools" — be concrete about which tools fail at what`;
+- For each competitor gap, name the SPECIFIC existing tools (like Notion, Trello, Slack, Obsidian) in "affectedTools" — be concrete about which tools fail at what
+- buildOrSkip: score each factor 0-10 honestly based on the discussions. Verdict logic: avg>=7 BUILD IT, 5-6.9 NEEDS WORK, <5 SKIP IT.
+- trend: judge whether interest in this topic is Growing, Stable, or Declining based on the recency and volume of discussions.
+- revenueModels: return EXACTLY 3 models, each a different type if possible. Mark exactly ONE as recommended:true (the strongest fit).`;
 
     const resp = await fetch(AI_GATEWAY_URL, {
       method: "POST",
