@@ -177,6 +177,9 @@ const Results = () => {
   const [numResults, setNumResults] = useState(10);
   const [rerunning, setRerunning] = useState(false);
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
+  const [evidenceSearch, setEvidenceSearch] = useState("");
+  const [evidenceSignal, setEvidenceSignal] = useState<"all" | "High" | "Medium" | "Low">("all");
+  const [evidenceSubreddit, setEvidenceSubreddit] = useState<string>("all");
 
   const [blueprintFor, setBlueprintFor] = useState<{ name: string; description: string } | null>(null);
 
