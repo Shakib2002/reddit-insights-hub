@@ -83,7 +83,13 @@ Deno.serve(async (req) => {
     }
 
     const k = keyword.trim();
-    const cleanSub = (subreddit ?? "").replace(/^r\//, "").trim();
+    // Support comma/space separated multiple subreddits, strip "r/" prefix from each
+    const subList: string[] = (subreddit ?? "")
+      .toString()
+      .split(/[,\s]+/)
+      .map((s: string) => s.replace(/^r\//i, "").trim())
+      .filter((s: string) => s.length > 0);
+    const cleanSub = subList[0] ?? ""; // primary (kept for back-compat)
 
     // Simple, reliable queries
     const queries = [
@@ -91,7 +97,10 @@ Deno.serve(async (req) => {
       `${k} reddit discussion`,
       `${k} reddit review`,
     ];
-    if (cleanSub) queries.push(`${k} site:reddit.com/r/${cleanSub}`);
+    // One targeted query per requested subreddit
+    for (const s of subList) {
+      queries.push(`${k} site:reddit.com/r/${s}`);
+    }
     if (extraQueries) {
       queries.push(`${k} reddit problems 2024`);
       queries.push(`${k} reddit complaints`);
