@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Loader2, Search, ChevronDown } from "lucide-react";
 import type { ResultsPayload } from "@/lib/types";
 
 const EXAMPLES = [
@@ -32,6 +34,9 @@ const Index = () => {
   const [keyword, setKeyword] = useState("");
   const [appIdea, setAppIdea] = useState("");
   const [subreddit, setSubreddit] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [numResults, setNumResults] = useState(10);
+  const [includeAllContext, setIncludeAllContext] = useState(true);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -54,7 +59,7 @@ const Index = () => {
     try {
       const { data: redditData, error: redditErr } = await supabase.functions.invoke(
         "reddit-fetch",
-        { body: { keyword, subreddit } },
+        { body: { keyword, subreddit, numResults, includeAllContext } },
       );
       if (redditErr) throw redditErr;
 
@@ -159,6 +164,60 @@ const Index = () => {
                   maxLength={50}
                 />
               </div>
+
+              <div className="border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+                  />
+                  Advanced search
+                </button>
+
+                {showAdvanced && (
+                  <div className="mt-4 space-y-5 rounded-lg bg-muted/40 p-4 border border-border">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="numResults" className="text-sm">
+                          Reddit results to fetch
+                        </Label>
+                        <span className="text-sm font-medium tabular-nums">{numResults}</span>
+                      </div>
+                      <Slider
+                        id="numResults"
+                        min={5}
+                        max={30}
+                        step={1}
+                        value={[numResults]}
+                        onValueChange={(v) => setNumResults(v[0])}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        More results = richer analysis but slower.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="includeAll" className="text-sm">
+                          Include r/all context
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Adds a second search for pain-point phrases across all of Reddit.
+                        </p>
+                      </div>
+                      <Switch
+                        id="includeAll"
+                        checked={includeAllContext}
+                        onCheckedChange={setIncludeAllContext}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button
                 type="submit"
                 size="lg"
