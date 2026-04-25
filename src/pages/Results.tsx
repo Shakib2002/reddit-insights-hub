@@ -469,58 +469,142 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             Real posts retrieved by the search — proof the analysis is grounded in actual
             discussions.
           </p>
-          {visibleEvidence.length === 0 ? (
+
+          {redditPosts.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
             <>
-              <div className="space-y-2">
-                {visibleEvidence.map((post, i) => (
-                  <Card key={i} className="p-3 md:p-4 hover:border-primary/40 transition-colors">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <a
-                          href={post.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-sm hover:text-primary hover:underline line-clamp-1"
-                        >
-                          {post.title}
-                        </a>
-                        <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                          {post.snippet || "(no snippet)"}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <Badge variant="outline" className="text-xs font-normal">
-                            {post.subreddit}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground tabular-nums">
-                            signal {post.score}
-                          </span>
-                        </div>
-                      </div>
-                      <a
-                        href={post.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary shrink-0 no-print"
-                        aria-label="Open on Reddit"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-              {redditPosts.length > 5 && (
-                <button
-                  type="button"
-                  onClick={() => setEvidenceExpanded((v) => !v)}
-                  className="mt-3 text-sm text-primary hover:underline no-print"
+              {/* Search & filters */}
+              <div className="flex flex-col md:flex-row gap-2 mb-3 no-print">
+                <div className="relative flex-1 min-w-0">
+                  <SearchIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="search"
+                    placeholder="Search posts by keyword…"
+                    value={evidenceSearch}
+                    onChange={(e) => setEvidenceSearch(e.target.value)}
+                    className="pl-9 pr-9 h-9"
+                    aria-label="Search Reddit evidence"
+                  />
+                  {evidenceSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setEvidenceSearch("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <Select
+                  value={evidenceSignal}
+                  onValueChange={(v) => setEvidenceSignal(v as typeof evidenceSignal)}
                 >
-                  {evidenceExpanded
-                    ? "Show fewer posts"
-                    : `Show all ${redditPosts.length} posts →`}
-                </button>
+                  <SelectTrigger className="md:w-[150px] h-9" aria-label="Filter by signal">
+                    <SelectValue placeholder="Signal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All signals</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={evidenceSubreddit} onValueChange={setEvidenceSubreddit}>
+                  <SelectTrigger className="md:w-[180px] h-9" aria-label="Filter by subreddit">
+                    <SelectValue placeholder="Subreddit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All subreddits</SelectItem>
+                    {evidenceSubreddits.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {filtersActive && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEvidenceSearch("");
+                      setEvidenceSignal("all");
+                      setEvidenceSubreddit("all");
+                    }}
+                    className="h-9 text-muted-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" /> Clear
+                  </Button>
+                )}
+              </div>
+
+              {/* Result count */}
+              <div className="text-xs text-muted-foreground mb-2 tabular-nums">
+                Showing {visibleEvidence.length} of {filteredEvidence.length}
+                {filtersActive && filteredEvidence.length !== redditPosts.length && (
+                  <> (filtered from {redditPosts.length})</>
+                )}
+              </div>
+
+              {filteredEvidence.length === 0 ? (
+                <EmptyPlaceholder text="No posts match the current filters. Try clearing them." />
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {visibleEvidence.map((post, i) => (
+                      <Card
+                        key={i}
+                        className="p-3 md:p-4 hover:border-primary/40 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <a
+                              href={post.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-sm hover:text-primary hover:underline line-clamp-1"
+                            >
+                              {post.title}
+                            </a>
+                            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                              {post.snippet || "(no snippet)"}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <Badge variant="outline" className="text-xs font-normal">
+                                {post.subreddit}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                signal {post.score}
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href={post.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-primary shrink-0 no-print"
+                            aria-label="Open on Reddit"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                  {filteredEvidence.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setEvidenceExpanded((v) => !v)}
+                      className="mt-3 text-sm text-primary hover:underline no-print"
+                    >
+                      {evidenceExpanded
+                        ? "Show fewer posts"
+                        : `Show all ${filteredEvidence.length} posts →`}
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}
