@@ -324,10 +324,12 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                     <a
                       href={p.link}
                       target="_blank"
-                      rel="noreferrer"
-                      className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1 no-print"
+                      rel="noopener noreferrer"
+                      aria-label={`View "${p.title}" on Reddit (opens in new tab)`}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 -mr-1 rounded-md text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors no-print"
                     >
-                      View on Reddit <ExternalLink className="h-3 w-3" />
+                      View on Reddit
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                     </a>
                   )}
                 </div>
