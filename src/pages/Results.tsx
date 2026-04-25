@@ -104,17 +104,29 @@ const StatCard = ({
   label,
   value,
   sub,
+  badge,
 }: {
   label: string;
   value: string | number;
   sub?: string;
+  badge?: string;
 }) => (
   <div className="flex flex-col justify-center p-4 md:p-5 bg-background/70 backdrop-blur rounded-lg border border-border">
-    <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-      {label}
+    <div className="flex items-center justify-between gap-2">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+        {label}
+      </div>
+      {badge && (
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground"
+          title={sub}
+        >
+          {badge}
+        </span>
+      )}
     </div>
     <div className="text-2xl md:text-3xl font-bold tabular-nums mt-1 truncate">{value}</div>
-    {sub && <div className="text-xs text-muted-foreground mt-0.5 truncate">{sub}</div>}
+    {sub && <div className="text-xs text-destructive mt-0.5 line-clamp-2">{sub}</div>}
   </div>
 );
 
