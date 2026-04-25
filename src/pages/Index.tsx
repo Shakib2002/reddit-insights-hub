@@ -426,14 +426,19 @@ const Index = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="idea">
-                  Your app idea <span className="text-muted-foreground font-normal">(optional)</span>
+                  {validateMode ? (
+                    <>Your app idea <span className="text-primary font-normal">*</span></>
+                  ) : (
+                    <>Your app idea <span className="text-muted-foreground font-normal">(optional)</span></>
+                  )}
                 </Label>
                 <Input
                   id="idea"
-                  placeholder="e.g. a bilingual AI mental coach for Bangladesh"
+                  placeholder={validateMode ? "Describe your app idea… e.g. A bilingual AI mental coach for Bangladesh" : "e.g. a bilingual AI mental coach for Bangladesh"}
                   value={appIdea}
                   onChange={(e) => setAppIdea(e.target.value)}
                   maxLength={300}
+                  required={validateMode}
                 />
               </div>
               <div className="space-y-2">
