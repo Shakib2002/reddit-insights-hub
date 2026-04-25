@@ -615,9 +615,9 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
 
         {/* 1. Hero stats bar */}
         <div
-          className="rounded-2xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-5 gap-3 fade-in bg-card shadow-card"
+          className="rounded-2xl border border-border px-6 py-6 md:px-8 grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 reveal-up bg-card shadow-card"
         >
-          <StatCard label="Pain Score" value={`${score}/100`} />
+          <StatCard label="Pain Score" value={`${score}/100`} glow="orange" />
           <StatCard
             label="Posts Found"
             value={totalFound}
@@ -639,11 +639,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             label="Avg Signal"
             value={avgSignalLabel(avgSig)}
             sub={`avg ${avgSig.toFixed(1)}`}
+            glow={
+              avgSignalLabel(avgSig) === "High"
+                ? "green"
+                : avgSignalLabel(avgSig) === "Low"
+                  ? "red"
+                  : undefined
+            }
           />
           <StatCard
             label="Top Subreddit"
             value={topSubreddit !== "—" ? topSubreddit : "—"}
-            valueClassName="text-[12px] md:text-sm font-semibold leading-tight"
+            valueClassName="text-[14px] md:text-[16px] font-semibold leading-tight"
             valueTitle={topSubreddit !== "—" ? `r/${topSubreddit}` : undefined}
           />
           <TrendStatCard trend={analysis.trend} />
@@ -682,16 +689,23 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         />
 
         {/* 3. Summary */}
-        <Card id="summary" className="p-4 md:p-5 fade-in scroll-mt-32">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+        <Card id="summary" className="summary-card p-6 md:p-7 reveal-up scroll-mt-32 relative">
+          <h2 className="text-[11px] font-semibold text-[#555566] uppercase tracking-[2px] mb-3">
             Summary
           </h2>
-          <p className="text-foreground leading-relaxed line-clamp-3">{analysis.summary}</p>
+          <p className="text-[15px] text-muted-foreground leading-[1.8] line-clamp-3">
+            {analysis.summary}
+          </p>
         </Card>
 
         {/* 4. Pain Points */}
-        <section id="pain-points" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-4">Pain Points</h2>
+        <section id="pain-points" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold section-accent">Pain Points</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {analysis.painPoints.length} found
+            </span>
+          </div>
           {analysis.painPoints.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
