@@ -1,13 +1,27 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Copy, ExternalLink, TrendingUp, Loader2, Plus } from "lucide-react";
-import type { ResultsPayload } from "@/lib/types";
+import {
+  ArrowLeft,
+  Copy,
+  ExternalLink,
+  TrendingUp,
+  Loader2,
+  Plus,
+  Share2,
+  Printer,
+  Sparkles,
+  Search as SearchIcon,
+} from "lucide-react";
+import type { ResultsPayload, Niche } from "@/lib/types";
+import { decodeShare, encodeShare } from "@/lib/share";
+import { saveToHistory } from "@/lib/history";
+import { BlueprintDialog } from "@/components/BlueprintDialog";
 
 const MAX_RESULTS = 30;
 const RERUN_STEP = 10;
@@ -18,14 +32,56 @@ const signalVariant = (s: string) => {
   return "bg-muted text-muted-foreground";
 };
 
+const sizeVariant = (s: Niche["size"]) => {
+  if (s === "Large") return "bg-primary/15 text-primary border-primary/30";
+  if (s === "Medium") return "bg-accent text-accent-foreground border-accent";
+  return "bg-muted text-muted-foreground border-border";
+};
+
+const SentimentBars = ({ s }: { s: ResultsPayload["analysis"]["sentiment"] }) => (
+  <div className="space-y-2">
+    <Bar label="Positive" pct={s.positive} color="hsl(var(--success))" />
+    <Bar label="Neutral" pct={s.neutral} color="hsl(var(--muted-foreground))" />
+    <Bar label="Negative" pct={s.negative} color="hsl(var(--destructive))" />
+  </div>
+);
+
+const Bar = ({ label, pct, color }: { label: string; pct: number; color: string }) => (
+  <div>
+    <div className="flex justify-between text-xs mb-1">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium tabular-nums">{pct}%</span>
+    </div>
+    <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+      <div
+        className="h-full rounded-full transition-all duration-700"
+        style={{ width: `${pct}%`, backgroundColor: color }}
+      />
+    </div>
+  </div>
+);
+
 const Results = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState<ResultsPayload | null>(null);
   const [numResults, setNumResults] = useState(10);
   const [rerunning, setRerunning] = useState(false);
 
+  // Blueprint dialog state
+  const [blueprintFor, setBlueprintFor] = useState<{ name: string; description: string } | null>(null);
+
   useEffect(() => {
+    const shared = searchParams.get("data");
+    if (shared) {
+      const decoded = decodeShare<ResultsPayload>(shared);
+      if (decoded && (decoded as any).analysis) {
+        setData(decoded);
+        if (decoded.inputs?.numResults) setNumResults(decoded.inputs.numResults);
+        return;
+      }
+    }
     const stored = sessionStorage.getItem("redditlens_results");
     if (!stored) {
       navigate("/");
@@ -34,7 +90,7 @@ const Results = () => {
     const parsed: ResultsPayload = JSON.parse(stored);
     setData(parsed);
     if (parsed.inputs.numResults) setNumResults(parsed.inputs.numResults);
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   if (!data) return null;
   const { inputs, analysis } = data;
@@ -86,6 +142,7 @@ const Results = () => {
         analysis: analyzeData.analysis,
       };
       sessionStorage.setItem("redditlens_results", JSON.stringify(updated));
+      saveToHistory(updated);
       setData(updated);
       setNumResults(nextCount);
       toast({
@@ -109,21 +166,28 @@ const Results = () => {
     const text = `RedditLens Report
 ================
 Keyword: ${inputs.keyword}
-App idea: ${inputs.appIdea}
-Subreddit: r/${inputs.subreddit}
+App idea: ${inputs.appIdea || "(none)"}
+Subreddit: ${inputs.subreddit ? "r/" + inputs.subreddit : "across Reddit"}
 Idea Match Score: ${analysis.ideaMatchScore}/100
 
 SUMMARY
 ${analysis.summary}
 
+SENTIMENT
+Positive ${analysis.sentiment.positive}% | Neutral ${analysis.sentiment.neutral}% | Negative ${analysis.sentiment.negative}%
+${analysis.sentimentSummary}
+
 PAIN POINTS
-${analysis.painPoints.map((p) => `• [${p.signal}] ${p.title} (r/${p.source})\n  ${p.description}`).join("\n")}
+${analysis.painPoints.map((p) => `• [${p.signal}] ${p.title} (r/${p.source})\n  ${p.description}${p.link ? `\n  ${p.link}` : ""}`).join("\n")}
 
 IDEA VALIDATION (${analysis.ideaValidation.matchPercentage}%)
 ${analysis.ideaValidation.reasons.map((r) => `• ${r}`).join("\n")}
 
-COMPETITOR GAPS
+APP OPPORTUNITIES (Competitor gaps)
 ${analysis.competitorGaps.map((g) => `• ${g.gap}: ${g.description}`).join("\n")}
+
+NICHES
+${analysis.niches.map((n) => `• [${n.size}] ${n.niche} — ${n.description}`).join("\n")}
 
 POTENTIAL FIRST USERS
 ${analysis.firstUserPersonas.map((p) => `• ${p.persona} — ${p.pain}`).join("\n")}
@@ -137,6 +201,26 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
     } catch {
       toast({ title: "Copy failed", variant: "destructive" });
     }
+  };
+
+  const shareReport = async () => {
+    try {
+      const u = new URL(window.location.href);
+      u.search = ""; // clean
+      u.searchParams.set("data", encodeShare(data));
+      await navigator.clipboard.writeText(u.toString());
+      toast({
+        title: "Link copied!",
+        description: "Anyone with this link can view your report.",
+      });
+    } catch {
+      toast({ title: "Share failed", variant: "destructive" });
+    }
+  };
+
+  const searchNiche = (niche: Niche) => {
+    sessionStorage.setItem("redditlens_prefill", niche.niche);
+    navigate("/");
   };
 
   const score = Math.round(analysis.ideaMatchScore);
@@ -208,6 +292,17 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           <p className="text-foreground leading-relaxed">{analysis.summary}</p>
         </Card>
 
+        {/* Sentiment */}
+        <Card className="p-6 fade-in">
+          <h2 className="text-lg font-semibold mb-3">Reddit Sentiment</h2>
+          <SentimentBars s={analysis.sentiment} />
+          {analysis.sentimentSummary && (
+            <p className="text-sm text-muted-foreground mt-3 italic">
+              {analysis.sentimentSummary}
+            </p>
+          )}
+        </Card>
+
         {/* Pain points */}
         <section className="fade-in">
           <h2 className="text-xl font-semibold mb-4">Pain Points</h2>
@@ -223,7 +318,19 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                   <Badge className={signalVariant(p.signal)}>{p.signal}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mb-2">{p.description}</p>
-                <p className="text-xs text-muted-foreground">from r/{p.source}</p>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-xs text-muted-foreground">from r/{p.source}</p>
+                  {p.link && (
+                    <a
+                      href={p.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1 no-print"
+                    >
+                      View on Reddit <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
               </Card>
             ))}
           </div>
@@ -247,22 +354,66 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </ul>
         </Card>
 
-        {/* Competitor gaps */}
+        {/* App opportunities (formerly competitor gaps) + Build This App */}
         <section className="fade-in">
-          <h2 className="text-xl font-semibold mb-4">Competitor Gaps</h2>
+          <h2 className="text-xl font-semibold mb-1">App Opportunities</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Gaps in existing solutions you could fill. Click <strong>Get Blueprint</strong> for an MVP plan.
+          </p>
           <div className="grid gap-3 md:grid-cols-3">
             {analysis.competitorGaps.map((g, i) => (
               <Card
                 key={i}
-                className="p-5 border-l-4"
+                className="p-5 border-l-4 flex flex-col"
                 style={{ borderLeftColor: "hsl(var(--success))" }}
               >
                 <h3 className="font-semibold mb-2">{g.gap}</h3>
-                <p className="text-sm text-muted-foreground">{g.description}</p>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">{g.description}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="no-print"
+                  onClick={() => setBlueprintFor({ name: g.gap, description: g.description })}
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Get Blueprint →
+                </Button>
               </Card>
             ))}
           </div>
         </section>
+
+        {/* Niche finder */}
+        {analysis.niches.length > 0 && (
+          <section className="fade-in">
+            <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Specific sub-niches to explore. Click any card to research that niche.
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {analysis.niches.map((n, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => searchNiche(n)}
+                  className="text-left rounded-xl p-5 border border-border bg-card hover:border-primary/60 hover:shadow-md transition-all group"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-1.5">
+                    <h3 className="font-semibold group-hover:text-primary transition-colors">
+                      {n.niche}
+                    </h3>
+                    <Badge variant="outline" className={`text-xs ${sizeVariant(n.size)}`}>
+                      {n.size}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{n.description}</p>
+                  <span className="text-xs text-primary font-medium inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
+                    <SearchIcon className="h-3 w-3" /> Research this niche
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* First users */}
         <section className="fade-in">
@@ -278,7 +429,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* Recommended subreddits */}
-        <section className="fade-in">
+        <section className="fade-in no-print">
           <h2 className="text-xl font-semibold mb-4">Recommended Subreddits</h2>
           <div className="flex flex-wrap gap-2">
             {analysis.recommendedSubreddits.map((s) => {
@@ -300,15 +451,15 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4 fade-in">
-          <Button onClick={() => navigate("/")} variant="outline" className="flex-1">
+        <div className="flex flex-wrap gap-2 pt-4 fade-in no-print">
+          <Button onClick={() => navigate("/")} variant="outline" className="flex-1 min-w-[140px]">
             <ArrowLeft className="h-4 w-4" /> Search Again
           </Button>
           <Button
             onClick={rerunWithMore}
             variant="outline"
             disabled={rerunning || !canRerun}
-            className="flex-1"
+            className="flex-1 min-w-[160px]"
             title={canRerun ? `Re-analyze with ${nextCount} results` : "Already at max results"}
           >
             {rerunning ? (
@@ -318,15 +469,32 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             ) : (
               <>
                 <Plus className="h-4 w-4" />
-                {canRerun ? `Use more results (${nextCount})` : `Max results (${numResults})`}
+                {canRerun ? `Use more results (${nextCount})` : `Max (${numResults})`}
               </>
             )}
           </Button>
-          <Button onClick={copyReport} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button onClick={shareReport} variant="outline" className="flex-1 min-w-[120px]">
+            <Share2 className="h-4 w-4" /> Share
+          </Button>
+          <Button onClick={() => window.print()} variant="outline" className="flex-1 min-w-[140px]">
+            <Printer className="h-4 w-4" /> Export PDF
+          </Button>
+          <Button onClick={copyReport} className="flex-1 min-w-[140px] bg-primary hover:bg-primary/90 text-primary-foreground">
             <Copy className="h-4 w-4" /> Copy Report
           </Button>
         </div>
       </main>
+
+      {blueprintFor && (
+        <BlueprintDialog
+          open={!!blueprintFor}
+          onOpenChange={(v) => !v && setBlueprintFor(null)}
+          appName={blueprintFor.name}
+          appDescription={blueprintFor.description}
+          painPoints={analysis.painPoints}
+          language={inputs.language ?? "en"}
+        />
+      )}
     </div>
   );
 };

@@ -9,8 +9,9 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Search, ChevronDown } from "lucide-react";
-import type { ResultsPayload } from "@/lib/types";
+import { Loader2, Search, ChevronDown, GitCompare, X } from "lucide-react";
+import type { ResultsPayload, ComparePayload } from "@/lib/types";
+import { saveToHistory } from "@/lib/history";
 
 const EXAMPLES = [
   "mental health apps",
@@ -40,10 +41,64 @@ const LOADING_STEPS = [
   "Building report…",
 ];
 
+async function runOneSearch(opts: {
+  keyword: string;
+  appIdea: string;
+  subreddit: string;
+  numResults: number;
+  includeAllContext: boolean;
+  language: "en" | "bn" | "both";
+}): Promise<ResultsPayload> {
+  const { data: redditData, error: redditErr } = await supabase.functions.invoke(
+    "reddit-fetch",
+    {
+      body: {
+        keyword: opts.keyword,
+        subreddit: opts.subreddit,
+        numResults: opts.numResults,
+        includeAllContext: opts.includeAllContext,
+      },
+    },
+  );
+  if (redditErr) throw redditErr;
+
+  const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
+    "analyze",
+    {
+      body: {
+        results: redditData?.results ?? [],
+        keyword: opts.keyword,
+        appIdea: opts.appIdea,
+        language: opts.language,
+      },
+    },
+  );
+  if (analyzeErr) {
+    const msg = (analyzeErr as any).context?.body
+      ? JSON.parse((analyzeErr as any).context.body).error
+      : analyzeErr.message;
+    throw new Error(msg);
+  }
+
+  return {
+    inputs: {
+      keyword: opts.keyword,
+      appIdea: opts.appIdea,
+      subreddit: opts.subreddit.replace(/^r\//, ""),
+      numResults: opts.numResults,
+      effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
+      language: opts.language,
+    },
+    analysis: analyzeData.analysis,
+  };
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [keyword, setKeyword] = useState("");
+  const [keyword2, setKeyword2] = useState("");
+  const [compareMode, setCompareMode] = useState(false);
   const [appIdea, setAppIdea] = useState("");
   const [subreddit, setSubreddit] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -52,6 +107,15 @@ const Index = () => {
   const [language, setLanguage] = useState<"en" | "bn" | "both">("en");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
+
+  // Pre-fill from /results "search this niche" via sessionStorage
+  useEffect(() => {
+    const prefill = sessionStorage.getItem("redditlens_prefill");
+    if (prefill) {
+      setKeyword(prefill);
+      sessionStorage.removeItem("redditlens_prefill");
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading) return;
@@ -65,47 +129,44 @@ const Index = () => {
       toast({ title: "Keyword is required", variant: "destructive" });
       return;
     }
+    if (compareMode && !keyword2.trim()) {
+      toast({ title: "Add a second keyword to compare", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
     setStep(0);
 
     try {
-      const { data: redditData, error: redditErr } = await supabase.functions.invoke(
-        "reddit-fetch",
-        { body: { keyword, subreddit, numResults, includeAllContext } },
-      );
-      if (redditErr) throw redditErr;
-
-      setStep(1);
-      // brief pause so the "reading discussions" step is visible
-      await new Promise((r) => setTimeout(r, 600));
-
-      setStep(2);
-      const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
-        "analyze",
-        { body: { results: redditData?.results ?? [], keyword, appIdea, language } },
-      );
-      if (analyzeErr) {
-        const msg = (analyzeErr as any).context?.body
-          ? JSON.parse((analyzeErr as any).context.body).error
-          : analyzeErr.message;
-        throw new Error(msg);
-      }
-
-      setStep(3);
-      const payload: ResultsPayload = {
-        inputs: {
+      if (compareMode) {
+        setStep(1);
+        const [left, right] = await Promise.all([
+          runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language }),
+          runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language }),
+        ]);
+        setStep(3);
+        const payload: ComparePayload = { mode: "compare", left, right };
+        sessionStorage.setItem("redditlens_compare", JSON.stringify(payload));
+        saveToHistory(left);
+        saveToHistory(right);
+        navigate("/compare");
+      } else {
+        setStep(1);
+        await new Promise((r) => setTimeout(r, 400));
+        setStep(2);
+        const payload = await runOneSearch({
           keyword,
           appIdea,
-          subreddit: subreddit.replace(/^r\//, ""),
+          subreddit,
           numResults,
-          effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
+          includeAllContext,
           language,
-        },
-        analysis: analyzeData.analysis,
-      };
-      sessionStorage.setItem("redditlens_results", JSON.stringify(payload));
-      navigate("/results");
+        });
+        setStep(3);
+        sessionStorage.setItem("redditlens_results", JSON.stringify(payload));
+        saveToHistory(payload);
+        navigate("/results");
+      }
     } catch (e) {
       console.error(e);
       toast({
@@ -151,7 +212,21 @@ const Index = () => {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="keyword">Keyword or topic</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="keyword">
+                    {compareMode ? "Keyword A" : "Keyword or topic"}
+                  </Label>
+                  <Button
+                    type="button"
+                    variant={compareMode ? "default" : "outline"}
+                    size="sm"
+                    className={`h-7 gap-1 text-xs ${compareMode ? "bg-primary hover:bg-primary/90" : ""}`}
+                    onClick={() => setCompareMode((v) => !v)}
+                  >
+                    <GitCompare className="h-3.5 w-3.5" />
+                    Compare
+                  </Button>
+                </div>
                 <Input
                   id="keyword"
                   placeholder="e.g. mental health apps"
@@ -160,6 +235,29 @@ const Index = () => {
                   maxLength={100}
                 />
               </div>
+
+              {compareMode && (
+                <div className="space-y-2 fade-in">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="keyword2">Keyword B</Label>
+                    <button
+                      type="button"
+                      onClick={() => { setCompareMode(false); setKeyword2(""); }}
+                      className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                    >
+                      <X className="h-3 w-3" /> remove
+                    </button>
+                  </div>
+                  <Input
+                    id="keyword2"
+                    placeholder="e.g. journaling apps"
+                    value={keyword2}
+                    onChange={(e) => setKeyword2(e.target.value)}
+                    maxLength={100}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="idea">
                   Your app idea <span className="text-muted-foreground font-normal">(optional)</span>
@@ -287,7 +385,7 @@ const Index = () => {
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base h-12"
               >
                 <Search className="h-5 w-5" />
-                Analyze Reddit
+                {compareMode ? "Compare both" : "Analyze Reddit"}
               </Button>
             </form>
           )}
