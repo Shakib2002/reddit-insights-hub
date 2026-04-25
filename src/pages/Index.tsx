@@ -21,6 +21,18 @@ const EXAMPLES = [
   "journaling apps",
 ];
 
+const SUBREDDIT_SUGGESTIONS = [
+  "startups",
+  "Entrepreneur",
+  "SideProject",
+  "SaaS",
+  "smallbusiness",
+  "androidapps",
+  "iOSProgramming",
+  "webdev",
+  "indiehackers",
+];
+
 const LOADING_STEPS = [
   "Searching Reddit…",
   "Reading discussions…",

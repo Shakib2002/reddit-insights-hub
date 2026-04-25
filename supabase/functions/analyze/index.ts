@@ -67,7 +67,11 @@ Deno.serve(async (req) => {
           .join("\n\n")
       : "(No Reddit search results retrieved — rely on general knowledge of common Reddit discussions about this topic.)";
 
-    const userPrompt = `Analyze these Reddit discussions about "${keyword}". The user's app idea is: "${appIdea}".
+    const ideaLine = appIdea && String(appIdea).trim()
+      ? `The user's app idea is: "${appIdea}". Score how well this idea matches the discussions found.`
+      : `The user has NOT provided a specific app idea. For "ideaMatchScore" and "ideaValidation.matchPercentage", instead score the overall opportunity strength of this topic on Reddit (0-100). For "ideaValidation.reasons", list 3 reasons why this topic is or isn't a strong opportunity for a new product.`;
+
+    const userPrompt = `Analyze these Reddit discussions about "${keyword}". ${ideaLine}
 
 Reddit discussions found:
 ${resultsText}
