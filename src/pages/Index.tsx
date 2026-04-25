@@ -562,7 +562,7 @@ const Index = () => {
         {/* Search Card with gradient glow */}
         <div className="relative max-w-[640px] mx-auto fade-in" style={{ animationDelay: "80ms" }}>
           <div aria-hidden className="absolute -inset-px rounded-[22px] bg-gradient-to-br from-primary/40 via-primary/10 to-transparent blur-md opacity-60" />
-          <Card className="relative p-5 sm:p-7 md:p-8 shadow-card-lg border-border bg-card rounded-[20px]">
+          <Card className="relative p-5 sm:p-7 md:p-8 search-card-glow border-border bg-card rounded-[20px]">
           {(
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Mode toggle */}
@@ -913,9 +913,13 @@ const Index = () => {
         )}
       </main>
 
+      {/* Section divider */}
+      {!loading && <div aria-hidden className="h-px section-divider relative z-10" />}
+
       {/* Feature highlights */}
       {!loading && (
-        <section className="container max-w-5xl py-16 md:py-20 relative z-10">
+        <section className="features-bg py-16 md:py-20 relative z-10">
+          <div className="container max-w-5xl">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">
               Everything you need to validate ideas
