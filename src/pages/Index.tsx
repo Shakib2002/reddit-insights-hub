@@ -371,24 +371,10 @@ const Index = () => {
 
         <Card className="p-6 md:p-8 fade-in">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-10 gap-4">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="text-base md:text-lg font-medium text-center">
-                {LOADING_STAGES[stageIdx]?.label}
-              </p>
-              <div className="w-full max-w-sm">
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${Math.round(progress)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground mt-2 tabular-nums">
-                  <span>{Math.round(progress)}%</span>
-                  <span>{validateMode ? "Idea validation" : "10 parallel searches"}</span>
-                </div>
-              </div>
-            </div>
+            <LoadingSteps
+              title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
+              steps={steps}
+            />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Mode toggle */}
