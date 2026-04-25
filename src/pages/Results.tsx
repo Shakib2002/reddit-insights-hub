@@ -32,6 +32,15 @@ import type { ResultsPayload, Niche, RedditPost } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { saveToHistory } from "@/lib/history";
 import { BlueprintDialog } from "@/components/BlueprintDialog";
+import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
+
+type RerunStepKey = "fetch" | "score" | "ai" | "render";
+const RERUN_STEPS: { key: RerunStepKey; label: string }[] = [
+  { key: "fetch", label: "Fetching 20 more Reddit posts" },
+  { key: "score", label: "Scoring & merging with existing posts" },
+  { key: "ai", label: "Re-analyzing with AI" },
+  { key: "render", label: "Rendering updated report" },
+];
 
 const MAX_RESULTS = 30;
 const RERUN_STEP = 10;
