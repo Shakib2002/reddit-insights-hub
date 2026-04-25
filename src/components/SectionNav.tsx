@@ -65,18 +65,18 @@ export function SectionNav({ items, topOffset = 60 }: SectionNavProps) {
       className="sticky z-30 -mx-4 md:-mx-0 backdrop-blur-xl border-b border-border no-print"
       style={{ top: topOffset, background: "rgba(10,10,11,0.9)" }}
     >
-      <ul className="flex gap-1 overflow-x-auto px-4 md:px-2 py-2 no-scrollbar">
+      <ul className="flex items-stretch gap-0 overflow-x-auto px-4 md:px-2 h-12 no-scrollbar">
         {items.map((it) => {
           const isActive = it.id === activeId;
           return (
-            <li key={it.id} className="shrink-0">
+            <li key={it.id} className="shrink-0 flex items-stretch">
               <a
                 href={`#${it.id}`}
                 onClick={(e) => handleClick(e, it.id)}
-                className={`inline-block whitespace-nowrap rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                className={`inline-flex items-center whitespace-nowrap px-4 text-[13px] font-medium border-b-2 transition-colors ${
                   isActive
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "text-primary border-primary"
+                    : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
                 aria-current={isActive ? "true" : undefined}
               >
