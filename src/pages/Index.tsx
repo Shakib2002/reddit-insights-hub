@@ -274,8 +274,8 @@ const Index = () => {
     }
 
     setLoading(true);
-    setProgress(0);
-    setStageIdx(0);
+    setActiveStep(null);
+    setStepDetails({});
 
     try {
       if (validateMode) {
@@ -285,8 +285,9 @@ const Index = () => {
           subreddit,
           numResults,
           language,
+          onStep,
         });
-        setStageIdx(VALIDATE_LOADING_STAGES.length - 1);
+        onStep("render", `Building report from ${result.totalFound} posts`);
         if (result.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -295,14 +296,17 @@ const Index = () => {
         }
         sessionStorage.setItem("redditlens_validate", JSON.stringify(result.payload));
         saveValidationToHistory(result.payload);
-        setProgress(100);
+        setActiveStep("done");
         navigate("/validate?mode=validate");
       } else if (compareMode) {
         const [left, right] = await Promise.all([
-          runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language }),
-          runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language }),
+          runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language, onStep }),
+          runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language, onStep }),
         ]);
-        setStageIdx(LOADING_STAGES.length - 1);
+        onStep(
+          "render",
+          `Building reports from ${left.totalFound + right.totalFound} posts`,
+        );
         if (left.lowData || right.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -317,7 +321,7 @@ const Index = () => {
         sessionStorage.setItem("redditlens_compare", JSON.stringify(compare));
         saveToHistory(left.payload);
         saveToHistory(right.payload);
-        setProgress(100);
+        setActiveStep("done");
         navigate("/compare");
       } else {
         const result = await runOneSearch({
@@ -327,8 +331,9 @@ const Index = () => {
           numResults,
           includeAllContext,
           language,
+          onStep,
         });
-        setStageIdx(LOADING_STAGES.length - 1);
+        onStep("render", `Building report from ${result.totalFound} posts`);
         if (result.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -337,7 +342,7 @@ const Index = () => {
         }
         sessionStorage.setItem("redditlens_results", JSON.stringify(result.payload));
         saveToHistory(result.payload);
-        setProgress(100);
+        setActiveStep("done");
         navigate("/results");
       }
     } catch (e) {
