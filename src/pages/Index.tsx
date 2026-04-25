@@ -168,6 +168,10 @@ async function runValidate(opts: {
   );
   if (redditErr) throw redditErr;
 
+  const fetched = redditData?.results?.length ?? 0;
+  opts.onStep?.("score", `Merged & ranked ${fetched} unique posts`);
+
+  opts.onStep?.("validate-ai", `Scoring 6 dimensions across ${fetched} posts`);
   const { data: validateData, error: validateErr } = await supabase.functions.invoke(
     "validate",
     {
