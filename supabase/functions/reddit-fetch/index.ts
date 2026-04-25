@@ -10,6 +10,8 @@ interface SerperResult {
   link: string;
   subreddit: string;
   score: number;
+  matchedSignals?: string[];
+  queryHits?: number;
 }
 
 function extractSubreddit(link: string): string {
@@ -17,20 +19,31 @@ function extractSubreddit(link: string): string {
   return m ? `r/${m[1]}` : "r/reddit";
 }
 
-function scoreResult(title: string, snippet: string): number {
+// Tiered keyword sets — each scored in BOTH title and snippet (title weighted higher)
+const HIGH_SIGNALS = ["wish", "need", "want", "problem", "hate", "frustrated", "frustrating", "broken", "useless"];
+const MID_SIGNALS = ["would pay", "alternative", "looking for", "recommend", "worth it", "subscription"];
+const LOW_SIGNALS = ["anyone else", "why doesn't", "i hate", "someone should build", "need an app"];
+
+function scoreResult(title: string, snippet: string): { score: number; matched: string[] } {
   const t = (title || "").toLowerCase();
   const s = (snippet || "").toLowerCase();
   let score = 0;
+  const matched = new Set<string>();
 
-  const high = ["wish", "need", "want", "problem", "hate", "frustrated"];
-  const mid = ["would pay", "alternative", "looking for"];
-  const low = ["anyone else", "why doesn't", "i hate"];
+  for (const w of HIGH_SIGNALS) {
+    if (t.includes(w)) { score += 3; matched.add(w); }
+    if (s.includes(w)) { score += 2; matched.add(w); }
+  }
+  for (const w of MID_SIGNALS) {
+    if (t.includes(w)) { score += 2; matched.add(w); }
+    if (s.includes(w)) { score += 1; matched.add(w); }
+  }
+  for (const w of LOW_SIGNALS) {
+    if (t.includes(w)) { score += 2; matched.add(w); }
+    if (s.includes(w)) { score += 1; matched.add(w); }
+  }
 
-  for (const w of high) if (t.includes(w)) score += 3;
-  for (const w of mid) if (t.includes(w)) score += 2;
-  for (const w of low) if (s.includes(w)) score += 1;
-
-  return score;
+  return { score, matched: [...matched] };
 }
 
 async function serperSearch(query: string, apiKey: string): Promise<any[]> {
