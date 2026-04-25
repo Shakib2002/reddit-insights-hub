@@ -995,6 +995,20 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             <Printer className="h-4 w-4" /> Export PDF
           </Button>
           <Button
+            onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.md`, reportToMarkdown(data), "text/markdown")}
+            variant="outline"
+            className="flex-1 min-w-[140px]"
+          >
+            <FileText className="h-4 w-4" /> Markdown
+          </Button>
+          <Button
+            onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.csv`, reportToCsv(data), "text/csv")}
+            variant="outline"
+            className="flex-1 min-w-[140px]"
+          >
+            <FileSpreadsheet className="h-4 w-4" /> CSV
+          </Button>
+          <Button
             onClick={copyReport}
             className="flex-1 min-w-[140px] bg-primary hover:bg-primary/90 text-primary-foreground"
           >
