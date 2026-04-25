@@ -65,6 +65,7 @@ const Results = () => {
             results: redditData?.results ?? [],
             keyword: inputs.keyword,
             appIdea: inputs.appIdea,
+            language: inputs.language ?? "en",
           },
         },
       );

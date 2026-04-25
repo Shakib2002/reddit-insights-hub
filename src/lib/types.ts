@@ -15,12 +15,15 @@ export interface Analysis {
   recommendedSubreddits: string[];
 }
 
+export type ReportLanguage = "en" | "bn" | "both";
+
 export interface SearchInputs {
   keyword: string;
   appIdea: string;
   subreddit: string;
   numResults?: number;
   effectiveSubreddits?: string[];
+  language?: ReportLanguage;
 }
 
 export interface ResultsPayload {
