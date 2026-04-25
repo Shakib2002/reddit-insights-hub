@@ -470,14 +470,14 @@ const Index = () => {
             <Sparkles className="h-3.5 w-3.5" />
             Powered by AI · Real Reddit data
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 leading-[1.05]">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-4 leading-[1.1]">
             Find Real Problems
             <br />
             <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               Worth Building
             </span>
           </h1>
-          <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-5">
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-5 px-2">
             Validate startup ideas in 30 seconds. Get AI-powered pain points, revenue models, and competitor gaps from real Reddit discussions.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
@@ -496,7 +496,7 @@ const Index = () => {
         {/* Search Card with gradient glow */}
         <div className="relative fade-in" style={{ animationDelay: "80ms" }}>
           <div aria-hidden className="absolute -inset-px rounded-[calc(var(--radius)+1px)] bg-gradient-to-br from-primary/30 via-primary/5 to-transparent blur-sm opacity-70" />
-          <Card className="relative p-6 md:p-8 shadow-xl border-border/60 backdrop-blur-sm bg-card/95">
+          <Card className="relative p-4 sm:p-6 md:p-8 shadow-xl border-border/60 backdrop-blur-sm bg-card/95">
           {loading ? (
             <LoadingSteps
               title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
@@ -509,24 +509,24 @@ const Index = () => {
                 <button
                   type="button"
                   onClick={() => { setValidateMode(false); }}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center justify-center gap-1.5 ${
+                  className={`px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors inline-flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                     !validateMode
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Search className="h-4 w-4" /> Search Mode
+                  <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Search
                 </button>
                 <button
                   type="button"
                   onClick={() => { setValidateMode(true); setCompareMode(false); }}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center justify-center gap-1.5 ${
+                  className={`px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors inline-flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                     validateMode
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <ShieldCheck className="h-4 w-4" /> Validate My Idea
+                  <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Validate Idea
                 </button>
               </div>
 
