@@ -153,7 +153,9 @@ async function runValidate(opts: {
   subreddit: string;
   numResults: number;
   language: "en" | "bn" | "both";
+  onStep?: (key: StepKey, detail?: string) => void;
 }): Promise<{ payload: import("@/lib/types").ValidatePayload; lowData: boolean; totalFound: number }> {
+  opts.onStep?.("fetch", `Searching for "${opts.keyword}"`);
   const { data: redditData, error: redditErr } = await supabase.functions.invoke(
     "reddit-fetch",
     {
