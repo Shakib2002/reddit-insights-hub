@@ -393,7 +393,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                 style={{ borderLeftColor: "hsl(var(--success))" }}
               >
                 <h3 className="font-semibold mb-2">{g.gap}</h3>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">{g.description}</p>
+                <p className="text-sm text-muted-foreground mb-3">{g.description}</p>
+                {g.opportunity && (
+                  <p className="text-sm mb-4 flex-1 text-success font-medium">
+                    <span className="opacity-80">Opportunity:</span> {g.opportunity}
+                  </p>
+                )}
+                {!g.opportunity && <div className="flex-1" />}
                 <Button
                   variant="outline"
                   size="sm"
