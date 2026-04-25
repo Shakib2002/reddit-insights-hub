@@ -154,6 +154,7 @@ const Results = () => {
           numResults: nextCount,
           effectiveSubreddits:
             redditData?.effectiveSubreddits ?? inputs.effectiveSubreddits ?? [],
+          rationale: redditData?.rationale ?? inputs.rationale,
         },
         analysis: analyzeData.analysis,
       };
