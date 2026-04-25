@@ -121,20 +121,26 @@ const Index = () => {
     }
   }, []);
 
-  // Animate progress while loading: creep towards the current stage's ceiling
+  // Animate progress while loading + auto-advance stage label
   useEffect(() => {
     if (!loading) return;
     const id = setInterval(() => {
       setProgress((p) => {
         const ceiling = LOADING_STAGES[stageIdx]?.until ?? 95;
         if (p >= ceiling) return p;
-        // ease-out: smaller increments as it approaches the ceiling
         const delta = Math.max(0.4, (ceiling - p) * 0.06);
         return Math.min(ceiling, p + delta);
       });
     }, 200);
     return () => clearInterval(id);
   }, [loading, stageIdx]);
+
+  // Auto-advance label: searches → analyzing after ~3.5s
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => setStageIdx((i) => Math.max(i, 1)), 3500);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
