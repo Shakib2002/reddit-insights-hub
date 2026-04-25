@@ -66,8 +66,9 @@ function normalizeAnalysis(raw: any) {
     gap: g.gap ?? "",
     description: g.description ?? "",
     opportunity: g.opportunity ?? "",
+    affectedTools: g.affectedTools ?? "",
   }));
-  const competitorGaps = [...fromOpps, ...fromGaps].slice(0, 6);
+  const competitorGaps = [...fromOpps, ...fromGaps].slice(0, 8);
 
   return {
     summary: raw.summary ?? "",
