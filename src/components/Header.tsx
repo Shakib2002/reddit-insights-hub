@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { HistoryDrawer } from "./HistoryDrawer";
+import logoUrl from "@/assets/redditlens-logo.svg";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -22,14 +23,12 @@ export const Header = () => {
       style={{ background: "rgba(10,10,11,0.8)" }}
     >
       <div className="container flex h-[60px] items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full gradient-orange text-white font-bold text-sm shadow-glow group-hover:scale-105 transition-transform">
-            R
-          </div>
-          <span className="text-[17px] font-semibold tracking-tight">
-            <span className="text-foreground">Reddit</span>
-            <span className="text-primary">Lens</span>
-          </span>
+        <Link to="/" className="flex items-center group" aria-label="RedditLens home">
+          <img
+            src={logoUrl}
+            alt="RedditLens"
+            className="h-9 w-auto group-hover:scale-[1.03] transition-transform"
+          />
         </Link>
         <div className="flex items-center gap-1.5">
           <HistoryDrawer />
