@@ -299,6 +299,11 @@ const Index = () => {
         }
         sessionStorage.setItem("redditlens_validate", JSON.stringify(result.payload));
         saveValidationToHistory(result.payload);
+        if (user) {
+          dbSaveValidation(user.id, result.payload).catch((err) =>
+            console.warn("DB save failed (non-blocking)", err),
+          );
+        }
         setActiveStep("done");
         navigate("/validate?mode=validate");
       } else if (compareMode) {
@@ -324,6 +329,10 @@ const Index = () => {
         sessionStorage.setItem("redditlens_compare", JSON.stringify(compare));
         saveToHistory(left.payload);
         saveToHistory(right.payload);
+        if (user) {
+          dbSaveSearch(user.id, left.payload).catch(() => {});
+          dbSaveSearch(user.id, right.payload).catch(() => {});
+        }
         setActiveStep("done");
         navigate("/compare");
       } else {
@@ -345,6 +354,9 @@ const Index = () => {
         }
         sessionStorage.setItem("redditlens_results", JSON.stringify(result.payload));
         saveToHistory(result.payload);
+        if (user) {
+          dbSaveSearch(user.id, result.payload).catch(() => {});
+        }
         setActiveStep("done");
         navigate("/results");
       }
