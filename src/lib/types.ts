@@ -5,6 +5,7 @@ export interface PainPoint {
   description: string;
   source: string;
   signal: "High" | "Medium" | "Low";
+  commercialIntent?: "High" | "Medium" | "Low";
   link?: string;
   sourceIndex?: number;
 }
@@ -21,13 +22,25 @@ export interface Sentiment {
   negative: number;
 }
 
+export interface CompetitorGap {
+  gap: string;
+  description: string;
+  opportunity?: string;
+}
+
+export interface Persona {
+  persona: string;
+  pain: string;
+  willingToPay?: "Yes" | "Maybe" | "No";
+}
+
 export interface Analysis {
   summary: string;
   ideaMatchScore: number;
   painPoints: PainPoint[];
   ideaValidation: { matchPercentage: number; reasons: string[] };
-  competitorGaps: { gap: string; description: string }[];
-  firstUserPersonas: { persona: string; pain: string }[];
+  competitorGaps: CompetitorGap[];
+  firstUserPersonas: Persona[];
   recommendedSubreddits: string[];
   sentiment: Sentiment;
   sentimentSummary: string;
