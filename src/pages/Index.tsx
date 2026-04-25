@@ -35,19 +35,50 @@ const SUBREDDIT_SUGGESTIONS = [
   "indiehackers",
 ];
 
-const LOADING_STAGES = [
-  { label: "Running 10 Reddit searches…", until: 55 },
-  { label: "Analyzing results…", until: 85 },
-  { label: "Building report…", until: 100 },
+type StepKey =
+  | "fetch"
+  | "score"
+  | "ai"
+  | "render"
+  | "validate-ai"
+  | "validate-score";
+
+const SEARCH_STEPS: { key: StepKey; label: string }[] = [
+  { key: "fetch", label: "Fetching Reddit posts (Serper search)" },
+  { key: "score", label: "Scoring & merging results" },
+  { key: "ai", label: "Calling AI to analyze discussions" },
+  { key: "render", label: "Rendering report" },
 ];
 
-const VALIDATE_LOADING_STAGES = [
-  { label: "Searching Reddit for evidence…", until: 35 },
-  { label: "Collecting discussions…", until: 55 },
-  { label: "Running idea validation…", until: 75 },
-  { label: "Scoring 6 dimensions…", until: 90 },
-  { label: "Building your validation report…", until: 100 },
+const VALIDATE_STEPS: { key: StepKey; label: string }[] = [
+  { key: "fetch", label: "Fetching Reddit evidence (Serper search)" },
+  { key: "score", label: "Scoring & merging results" },
+  { key: "validate-ai", label: "Running 6-dimension idea validation (AI)" },
+  { key: "render", label: "Rendering validation report" },
 ];
+
+function buildSteps(
+  defs: { key: StepKey; label: string }[],
+  activeKey: StepKey | "done" | null,
+  details: Partial<Record<StepKey, string>> = {},
+): LoadingStep[] {
+  if (activeKey === "done") {
+    return defs.map((d) => ({ ...d, status: "done", detail: details[d.key] }));
+  }
+  const activeIdx = activeKey ? defs.findIndex((d) => d.key === activeKey) : -1;
+  return defs.map((d, i) => ({
+    ...d,
+    status:
+      activeIdx === -1
+        ? "pending"
+        : i < activeIdx
+          ? "done"
+          : i === activeIdx
+            ? "active"
+            : "pending",
+    detail: details[d.key],
+  }));
+}
 
 async function runOneSearch(opts: {
   keyword: string;
