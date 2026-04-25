@@ -674,6 +674,8 @@ const Index = () => {
                 </button>
               ))}
             </div>
+
+            <LivePainFeed onPick={(topic) => runQuickSearch(topic)} />
           </div>
         )}
       </main>
