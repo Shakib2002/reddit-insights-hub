@@ -74,6 +74,13 @@ export interface SearchInputs {
   redditPosts?: RedditPost[];
   totalFound?: number;
   serperOk?: boolean;
+  debug?: {
+    totalFound: number;
+    queriesRun: number;
+    apiKeySet: boolean;
+    anySerperOk?: boolean;
+    perQueryStatuses?: number[];
+  };
 }
 
 export interface ResultsPayload {
