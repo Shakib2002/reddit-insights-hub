@@ -111,3 +111,32 @@
     to { opacity: 1; transform: translateY(0); }
   }
 }
+
+/* Print styles for Export PDF */
+@media print {
+  .no-print,
+  header,
+  [data-no-print] {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  main {
+    padding: 1rem !important;
+    max-width: 100% !important;
+  }
+  .fade-in {
+    animation: none !important;
+  }
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+  /* page breaks */
+  section, .print-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
