@@ -301,6 +301,47 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </div>
         </div>
 
+        {/* Why these results — search rationale */}
+        {inputs.rationale && (
+          <Card className="p-5 fade-in border-dashed bg-muted/30">
+            <div className="flex items-start gap-3">
+              <div className="h-8 w-8 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <SearchIcon className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-semibold mb-1">Why these results</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {inputs.rationale.summary}
+                </p>
+                {inputs.rationale.topSignals.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {inputs.rationale.topSignals.map((t) => (
+                      <Badge
+                        key={t.signal}
+                        variant="outline"
+                        className="text-xs bg-background"
+                      >
+                        “{t.signal}” ×{t.count}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground tabular-nums">
+                  <span>{inputs.rationale.totalQueries} parallel queries</span>
+                  <span>·</span>
+                  <span>avg signal score {inputs.rationale.avgScore}</span>
+                  {inputs.rationale.multiQueryHits > 0 && (
+                    <>
+                      <span>·</span>
+                      <span>{inputs.rationale.multiQueryHits} cross-query match{inputs.rationale.multiQueryHits === 1 ? "" : "es"}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Summary */}
         <Card className="p-6 fade-in">
           <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
