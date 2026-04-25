@@ -809,6 +809,17 @@ const Index = () => {
             </form>
           )}
           </Card>
+
+          <LoadingOverlay
+            open={loading}
+            title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
+            subtitle={
+              validateMode
+                ? "Stress-testing your concept against real founder pain on Reddit."
+                : "Scanning Reddit threads, clustering pain points, and ranking opportunities."
+            }
+            steps={steps}
+          />
         </div>
 
         {!loading && (
