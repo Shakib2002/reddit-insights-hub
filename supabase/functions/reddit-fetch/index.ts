@@ -16,12 +16,12 @@ function extractSubreddit(link: string): string {
   return m ? m[1] : "";
 }
 
-async function serperSearch(query: string, apiKey: string): Promise<SerperResult[]> {
+async function serperSearch(query: string, apiKey: string, num: number): Promise<SerperResult[]> {
   try {
     const res = await fetch("https://google.serper.dev/search", {
       method: "POST",
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query, num: 10 }),
+      body: JSON.stringify({ q: query, num }),
     });
     if (!res.ok) {
       console.error("Serper error:", res.status, await res.text());
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { keyword, subreddit } = await req.json();
+    const { keyword, subreddit, numResults, includeAllContext } = await req.json();
     if (!keyword || typeof keyword !== "string") {
       return new Response(JSON.stringify({ error: "keyword required" }), {
         status: 400,
@@ -59,6 +59,8 @@ Deno.serve(async (req) => {
     if (!SERPER_API_KEY) throw new Error("SERPER_API_KEY not configured");
 
     const cleanSub = (subreddit ?? "").replace(/^r\//, "").trim();
+    const num = Math.max(5, Math.min(30, Number(numResults) || 10));
+    const includeAll = includeAllContext !== false; // default true
 
     const primaryQuery = cleanSub
       ? `site:reddit.com/r/${cleanSub} ${keyword}`
@@ -66,13 +68,17 @@ Deno.serve(async (req) => {
 
     const painQuery = `site:reddit.com ${keyword} "I wish" OR "why doesn't" OR "I hate" OR "need an app"`;
 
-    const [primary, pain] = await Promise.all([
-      serperSearch(primaryQuery, SERPER_API_KEY),
-      serperSearch(painQuery, SERPER_API_KEY),
-    ]);
+    const searches: Promise<SerperResult[]>[] = [
+      serperSearch(primaryQuery, SERPER_API_KEY, num),
+    ];
+    if (includeAll) {
+      searches.push(serperSearch(painQuery, SERPER_API_KEY, Math.min(num, 10)));
+    }
+
+    const batches = await Promise.all(searches);
 
     const seen = new Set<string>();
-    const results = [...primary, ...pain].filter((r) => {
+    const results = batches.flat().filter((r) => {
       if (seen.has(r.link)) return false;
       seen.add(r.link);
       return true;
