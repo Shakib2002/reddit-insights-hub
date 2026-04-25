@@ -47,6 +47,14 @@ export interface Analysis {
   niches: Niche[];
 }
 
+export interface SearchRationale {
+  summary: string;
+  topSignals: { signal: string; count: number }[];
+  multiQueryHits: number;
+  avgScore: number;
+  totalQueries: number;
+}
+
 export interface SearchInputs {
   keyword: string;
   appIdea: string;
@@ -54,6 +62,7 @@ export interface SearchInputs {
   numResults?: number;
   effectiveSubreddits?: string[];
   language?: ReportLanguage;
+  rationale?: SearchRationale;
 }
 
 export interface ResultsPayload {
