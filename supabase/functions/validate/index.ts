@@ -8,8 +8,8 @@ const SYSTEM = `You are a brutal but fair startup validator. You have seen thous
 
 Be honest. If the idea is bad, say so clearly. If it is good, explain why with specific evidence from Reddit discussions. Always return valid JSON only.`;
 
-const MODEL_ROUTER_URL = "https://api.modelrouter.app/v1/chat/completions";
-const MODEL = "gemini-3-flash-preview";
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MODEL = "google/gemini-2.5-flash";
 
 const DIMENSION_NAMES = [
   "Problem Validation",
@@ -99,8 +99,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const API_KEY = Deno.env.get("MODELROUTER_API_KEY");
-    if (!API_KEY) throw new Error("MODELROUTER_API_KEY not configured");
+    const API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const resultsText = results.length
       ? results
@@ -155,7 +155,7 @@ Rules:
 - All 6 dimensions are required, in this exact order, with these exact names.
 - overallScore should reflect a weighted average across dimensions.`;
 
-    const resp = await fetch(MODEL_ROUTER_URL, {
+    const resp = await fetch(AI_GATEWAY_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${API_KEY}`,
@@ -163,7 +163,6 @@ Rules:
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 3000,
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userPrompt },
@@ -173,16 +172,16 @@ Rules:
 
     if (!resp.ok) {
       const t = await resp.text();
-      console.error("Model router error:", resp.status, t);
+      console.error("AI gateway error:", resp.status, t);
       if (resp.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (resp.status === 401 || resp.status === 403) {
-        return new Response(JSON.stringify({ error: "Invalid API key for the model router." }), {
-          status: resp.status,
+      if (resp.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }), {
+          status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

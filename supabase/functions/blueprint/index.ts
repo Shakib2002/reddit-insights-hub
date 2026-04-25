@@ -5,8 +5,8 @@ const corsHeaders = {
 };
 
 const SYSTEM = "You are a startup advisor and product architect.";
-const MODEL_ROUTER_URL = "https://api.modelrouter.app/v1/chat/completions";
-const MODEL = "gemini-3-flash-preview";
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MODEL = "google/gemini-2.5-flash";
 
 function extractJson(text: string): any {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);

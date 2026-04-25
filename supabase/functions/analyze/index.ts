@@ -20,8 +20,8 @@ Rules:
 - Be specific: 'Notion is too complex for simple task lists' not 'apps are bad'
 - Always return valid JSON only — no markdown, no explanation`;
 
-const MODEL_ROUTER_URL = "https://api.modelrouter.app/v1/chat/completions";
-const MODEL = "gemini-3-flash-preview";
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MODEL = "google/gemini-2.5-flash";
 
 function extractJson(text: string): any {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
