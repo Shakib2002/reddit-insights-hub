@@ -26,6 +26,7 @@ export interface CompetitorGap {
   gap: string;
   description: string;
   opportunity?: string;
+  affectedTools?: string;
 }
 
 export interface Persona {
