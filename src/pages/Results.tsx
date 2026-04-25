@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Copy, ExternalLink, TrendingUp } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, TrendingUp, Loader2, Plus } from "lucide-react";
 import type { ResultsPayload } from "@/lib/types";
+
+const MAX_RESULTS = 30;
+const RERUN_STEP = 10;
 
 const signalVariant = (s: string) => {
   if (s === "High") return "bg-primary text-primary-foreground";
@@ -18,6 +22,8 @@ const Results = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [data, setData] = useState<ResultsPayload | null>(null);
+  const [numResults, setNumResults] = useState(10);
+  const [rerunning, setRerunning] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("redditlens_results");
@@ -25,11 +31,73 @@ const Results = () => {
       navigate("/");
       return;
     }
-    setData(JSON.parse(stored));
+    const parsed: ResultsPayload = JSON.parse(stored);
+    setData(parsed);
+    if (parsed.inputs.numResults) setNumResults(parsed.inputs.numResults);
   }, [navigate]);
 
   if (!data) return null;
   const { inputs, analysis } = data;
+
+  const nextCount = Math.min(MAX_RESULTS, numResults + RERUN_STEP);
+  const canRerun = nextCount > numResults;
+
+  const rerunWithMore = async () => {
+    setRerunning(true);
+    try {
+      const { data: redditData, error: redditErr } = await supabase.functions.invoke(
+        "reddit-fetch",
+        {
+          body: {
+            keyword: inputs.keyword,
+            subreddit: inputs.subreddit,
+            numResults: nextCount,
+            includeAllContext: true,
+          },
+        },
+      );
+      if (redditErr) throw redditErr;
+
+      const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
+        "analyze",
+        {
+          body: {
+            results: redditData?.results ?? [],
+            keyword: inputs.keyword,
+            appIdea: inputs.appIdea,
+          },
+        },
+      );
+      if (analyzeErr) {
+        const msg = (analyzeErr as any).context?.body
+          ? JSON.parse((analyzeErr as any).context.body).error
+          : analyzeErr.message;
+        throw new Error(msg);
+      }
+
+      const updated: ResultsPayload = {
+        inputs: { ...inputs, numResults: nextCount },
+        analysis: analyzeData.analysis,
+      };
+      sessionStorage.setItem("redditlens_results", JSON.stringify(updated));
+      setData(updated);
+      setNumResults(nextCount);
+      toast({
+        title: "Report updated",
+        description: `Re-analyzed with ${nextCount} Reddit results.`,
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "Re-analysis failed",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRerunning(false);
+    }
+  };
 
   const copyReport = async () => {
     const text = `RedditLens Report
@@ -203,6 +271,24 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         <div className="flex flex-col sm:flex-row gap-3 pt-4 fade-in">
           <Button onClick={() => navigate("/")} variant="outline" className="flex-1">
             <ArrowLeft className="h-4 w-4" /> Search Again
+          </Button>
+          <Button
+            onClick={rerunWithMore}
+            variant="outline"
+            disabled={rerunning || !canRerun}
+            className="flex-1"
+            title={canRerun ? `Re-analyze with ${nextCount} results` : "Already at max results"}
+          >
+            {rerunning ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Re-analyzing…
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" />
+                {canRerun ? `Use more results (${nextCount})` : `Max results (${numResults})`}
+              </>
+            )}
           </Button>
           <Button onClick={copyReport} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
             <Copy className="h-4 w-4" /> Copy Report

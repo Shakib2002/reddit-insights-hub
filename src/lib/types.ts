@@ -19,6 +19,7 @@ export interface SearchInputs {
   keyword: string;
   appIdea: string;
   subreddit: string;
+  numResults?: number;
 }
 
 export interface ResultsPayload {
