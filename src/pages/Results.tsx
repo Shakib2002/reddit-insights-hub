@@ -81,9 +81,11 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             <p className="text-muted-foreground">
               <span className="font-medium text-foreground">Idea:</span> {inputs.appIdea}
             </p>
-            <p className="text-sm text-muted-foreground">
-              Searched in <span className="font-medium">r/{inputs.subreddit}</span>
-            </p>
+            {inputs.subreddit && (
+              <p className="text-sm text-muted-foreground">
+                Searched in <span className="font-medium">r/{inputs.subreddit}</span>
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-center shrink-0">
             <div className="relative h-32 w-32 rounded-full bg-primary text-primary-foreground flex flex-col items-center justify-center shadow-lg">
