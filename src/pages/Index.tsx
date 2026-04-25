@@ -93,7 +93,13 @@ const Index = () => {
 
       setStep(3);
       const payload: ResultsPayload = {
-        inputs: { keyword, appIdea, subreddit: subreddit.replace(/^r\//, ""), numResults },
+        inputs: {
+          keyword,
+          appIdea,
+          subreddit: subreddit.replace(/^r\//, ""),
+          numResults,
+          effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
+        },
         analysis: analyzeData.analysis,
       };
       sessionStorage.setItem("redditlens_results", JSON.stringify(payload));

@@ -20,6 +20,7 @@ export interface SearchInputs {
   appIdea: string;
   subreddit: string;
   numResults?: number;
+  effectiveSubreddits?: string[];
 }
 
 export interface ResultsPayload {
