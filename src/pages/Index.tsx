@@ -820,13 +820,13 @@ const Index = () => {
             <p className="text-sm text-muted-foreground mb-3 text-center">
               Try an example:
             </p>
-            <div className="flex flex-wrap gap-2 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center max-w-[640px] mx-auto">
               {EXAMPLES.map((ex) => (
                 <button
                   key={ex}
                   type="button"
                   onClick={() => setKeyword(ex)}
-                  className="px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground hover:scale-105 transition-all border border-border"
+                  className="px-3.5 py-1.5 rounded-full text-[13px] bg-card text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/[0.05] transition-colors border border-border"
                 >
                   {ex}
                 </button>
