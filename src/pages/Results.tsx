@@ -33,6 +33,7 @@ import { decodeShare, encodeShare } from "@/lib/share";
 import { saveToHistory } from "@/lib/history";
 import { BlueprintDialog } from "@/components/BlueprintDialog";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
+import { SectionNav } from "@/components/SectionNav";
 
 type RerunStepKey = "fetch" | "score" | "ai" | "render";
 const RERUN_STEPS: { key: RerunStepKey; label: string }[] = [
@@ -565,7 +566,9 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           />
           <StatCard
             label="Top Subreddit"
-            value={topSubreddit !== "—" ? `r/${topSubreddit}` : "—"}
+            value={topSubreddit !== "—" ? topSubreddit : "—"}
+            valueClassName="text-[12px] md:text-sm font-semibold leading-tight"
+            valueTitle={topSubreddit !== "—" ? `r/${topSubreddit}` : undefined}
           />
         </div>
 
@@ -584,8 +587,21 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </div>
         )}
 
+        <SectionNav
+          items={[
+            { id: "summary", label: "Summary" },
+            { id: "pain-points", label: "Pain Points" },
+            { id: "evidence", label: "Evidence" },
+            { id: "sentiment", label: "Sentiment" },
+            { id: "opportunities", label: "Opportunities" },
+            { id: "gaps", label: "Gaps" },
+            { id: "niches", label: "Niches" },
+            { id: "first-users", label: "First Users" },
+          ]}
+        />
+
         {/* 3. Summary */}
-        <Card className="p-4 md:p-5 fade-in">
+        <Card id="summary" className="p-4 md:p-5 fade-in scroll-mt-32">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
             Summary
           </h2>
@@ -593,7 +609,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </Card>
 
         {/* 4. Pain Points */}
-        <section className="fade-in">
+        <section id="pain-points" className="fade-in scroll-mt-32">
           <h2 className="text-xl font-semibold mb-4">Pain Points</h2>
           {analysis.painPoints.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
@@ -607,7 +623,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 5. Reddit Evidence */}
-        <section className="fade-in">
+        <section id="evidence" className="fade-in scroll-mt-32">
           <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" />
             Reddit Evidence
@@ -758,7 +774,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 6. Sentiment */}
-        <Card className="p-4 md:p-5 fade-in">
+        <Card id="sentiment" className="p-4 md:p-5 fade-in scroll-mt-32">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
             Reddit Sentiment
           </h2>
@@ -769,7 +785,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </Card>
 
         {/* 7. App Opportunities */}
-        <section className="fade-in">
+        <section id="opportunities" className="fade-in scroll-mt-32">
           <h2 className="text-xl font-semibold mb-1">App Opportunities</h2>
           <p className="text-sm text-muted-foreground mb-4">
             Gaps in existing solutions you could fill. Click <strong>Get Blueprint</strong> for an
@@ -811,7 +827,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 8. Competitor Gaps */}
-        <section className="fade-in">
+        <section id="gaps" className="fade-in scroll-mt-32">
           <h2 className="text-xl font-semibold mb-4">Competitor Gaps</h2>
           {gaps.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
@@ -858,7 +874,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 9. Niche Opportunities — grid */}
-        <section className="fade-in">
+        <section id="niches" className="fade-in scroll-mt-32">
           <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
           <p className="text-sm text-muted-foreground mb-3">
             Click any card to research that niche.
@@ -892,7 +908,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 10. Potential First Users */}
-        <section className="fade-in">
+        <section id="first-users" className="fade-in scroll-mt-32">
           <h2 className="text-xl font-semibold mb-4">Potential First Users</h2>
           {analysis.firstUserPersonas.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
