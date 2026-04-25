@@ -349,6 +349,9 @@ const Results = () => {
   );
 
   const totalFound = data?.inputs.totalFound ?? redditPosts.length;
+  const redditCount =
+    data?.inputs.debug?.redditCount ??
+    redditPosts.filter((p) => (p.link || "").includes("reddit.com")).length;
   const noPosts = totalFound === 0 || data?.inputs.serperOk === false;
 
   const [opportunities, gaps] = useMemo(() => {
@@ -620,13 +623,22 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           <StatCard label="Pain Score" value={`${score}/100`} glow="orange" />
           <StatCard
             label="Posts Found"
-            value={totalFound}
+            value={redditCount > 0 ? `${redditCount} Reddit` : totalFound > 0 ? "AI insights" : "0 posts"}
+            valueClassName={
+              redditCount > 0
+                ? "text-[20px] md:text-[24px] font-bold text-green-500"
+                : totalFound > 0
+                  ? "text-[20px] md:text-[24px] font-bold text-yellow-500"
+                  : "text-[20px] md:text-[24px] font-bold text-red-500"
+            }
             sub={
               totalFound === 0 && inputs.debug?.apiKeySet === false
                 ? "⚠ API Key Issue? Check SERPER_API_KEY env var"
                 : totalFound === 0 && inputs.serperOk === false
-                ? "⚠ API Key Issue? Serper rejected the request"
-                : undefined
+                  ? "⚠ API Key Issue? Serper rejected the request"
+                  : redditCount === 0 && totalFound > 0
+                    ? "No Reddit posts — AI fallback"
+                    : undefined
             }
             badge={
               totalFound === 0 && (inputs.debug?.apiKeySet === false || inputs.serperOk === false)
@@ -656,18 +668,61 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           <TrendStatCard trend={analysis.trend} />
         </div>
 
-        {/* 2. Warning banner if no Reddit data */}
-        {noPosts && (
+        {/* 2. Smart data-source banner */}
+        {redditCount >= 10 ? (
+          <div
+            role="status"
+            className="flex items-center gap-3 rounded-lg border border-green-500/40 bg-green-500/10 p-3 fade-in"
+          >
+            <span className="text-green-600 dark:text-green-400 font-semibold text-sm">
+              ✓ {redditCount} real Reddit posts analyzed
+            </span>
+          </div>
+        ) : redditCount >= 1 ? (
           <div
             role="alert"
             className="flex items-start gap-3 rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-4 fade-in"
           >
             <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
             <p className="text-sm text-yellow-900 dark:text-yellow-100">
-              <strong>No Reddit posts found.</strong> Showing AI-generated insights based on general
-              knowledge. For real Reddit data, try a more specific keyword
-              {inputs.serperOk === false ? " (or check that the Serper API key is valid)" : ""}.
+              ⚠️ Only <strong>{redditCount}</strong> Reddit posts found. Try a more specific keyword
+              for better results.
             </p>
+          </div>
+        ) : (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-lg border border-orange-500/40 bg-orange-500/10 p-4 fade-in"
+          >
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-orange-900 dark:text-orange-100">
+                🤖 <strong>No Reddit posts found</strong> for this keyword. Showing AI-generated
+                insights based on general Reddit knowledge. Results may be less accurate
+                {inputs.serperOk === false ? " (the Serper API key may be invalid)" : ""}.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 pl-8">
+              <span className="text-xs text-orange-900/80 dark:text-orange-100/80 self-center">
+                Try:
+              </span>
+              {[
+                `${inputs.keyword} app`,
+                `${inputs.keyword} problems`,
+                `${inputs.keyword} reddit`,
+              ].map((sug) => (
+                <button
+                  key={sug}
+                  onClick={() => {
+                    sessionStorage.setItem("rl_keyword", sug);
+                    navigate("/");
+                  }}
+                  className="text-xs px-2.5 py-1 rounded-md border border-orange-500/40 bg-background hover:bg-orange-500/20 text-orange-700 dark:text-orange-300 transition-colors"
+                >
+                  {sug}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
