@@ -193,13 +193,20 @@ Rules:
 
     const analysis = normalizeAnalysis(parsed);
 
-    // Attach the actual Reddit link to each pain point using sourceIndex
+    // Attach the actual Reddit link + extracted subreddit to each pain point using sourceIndex
+    const extractSubFromLink = (link: string): string => {
+      const m = link?.match(/reddit\.com\/r\/([^/?#]+)/i);
+      return m ? m[1] : "";
+    };
     analysis.painPoints = analysis.painPoints.map((p: any) => {
       const idx = (p.sourceIndex ?? 0) - 1;
       const src = idx >= 0 && idx < results.length ? results[idx] : null;
+      const link = src?.link ?? "";
+      const subFromLink = extractSubFromLink(link) || src?.subreddit || "";
       return {
         ...p,
-        link: src?.link ?? "",
+        link,
+        source: subFromLink || p.source,
       };
     });
 
