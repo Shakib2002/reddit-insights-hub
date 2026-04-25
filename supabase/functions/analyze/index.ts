@@ -52,6 +52,57 @@ function normalizeSentiment(raw: any) {
   return { positive: p, neutral: n, negative: 100 - p - n };
 }
 
+function clamp10(n: any): number {
+  const v = Number(n) || 0;
+  return Math.max(0, Math.min(10, Math.round(v * 10) / 10));
+}
+
+function normalizeBuildOrSkip(raw: any) {
+  if (!raw) return undefined;
+  const factors = {
+    marketSize: clamp10(raw.factors?.marketSize),
+    painIntensity: clamp10(raw.factors?.painIntensity),
+    competitionGap: clamp10(raw.factors?.competitionGap),
+    monetization: clamp10(raw.factors?.monetization),
+    timing: clamp10(raw.factors?.timing),
+  };
+  const avg =
+    (factors.marketSize + factors.painIntensity + factors.competitionGap + factors.monetization + factors.timing) / 5;
+  let verdict: "BUILD IT" | "NEEDS WORK" | "SKIP IT";
+  if (avg >= 7) verdict = "BUILD IT";
+  else if (avg >= 5) verdict = "NEEDS WORK";
+  else verdict = "SKIP IT";
+  const allowed = ["BUILD IT", "NEEDS WORK", "SKIP IT"];
+  if (allowed.includes(raw.verdict)) verdict = raw.verdict;
+  return {
+    verdict,
+    reason: String(raw.reason ?? "").slice(0, 400),
+    confidence: clampPct(raw.confidence ?? 70),
+    factors,
+  };
+}
+
+function normalizeTrend(raw: any) {
+  if (!raw) return undefined;
+  const dir = ["Growing", "Stable", "Declining"].includes(raw.direction) ? raw.direction : "Stable";
+  return { direction: dir, reason: String(raw.reason ?? "").slice(0, 300) };
+}
+
+function normalizeRevenueModels(raw: any): any[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const types = ["Freemium", "B2B SaaS", "Marketplace", "One-time"];
+  const items = raw.slice(0, 3).map((m: any) => ({
+    type: types.includes(m.type) ? m.type : "Freemium",
+    name: String(m.name ?? "").slice(0, 80),
+    description: String(m.description ?? "").slice(0, 280),
+    mrrRange: String(m.mrrRange ?? "").slice(0, 40),
+    redditEvidence: String(m.redditEvidence ?? "").slice(0, 200),
+    recommended: !!m.recommended,
+  }));
+  if (items.length && !items.some((m: any) => m.recommended)) items[0].recommended = true;
+  return items;
+}
+
 function normalizeAnalysis(raw: any) {
   // Pain score from new prompt; fall back to ideaMatchScore for compat
   const painScore = clampPct(raw.painScore ?? raw.ideaMatchScore ?? 0);
@@ -101,6 +152,9 @@ function normalizeAnalysis(raw: any) {
       description: n.description ?? "",
       size: normEnum(n.size, ["Large", "Medium", "Small"], "Medium"),
     })),
+    buildOrSkip: normalizeBuildOrSkip(raw.buildOrSkip),
+    trend: normalizeTrend(raw.trend),
+    revenueModels: normalizeRevenueModels(raw.revenueModels),
   };
 }
 
