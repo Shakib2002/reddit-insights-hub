@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Target } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { RedditPost } from "@/lib/types";
 
@@ -73,15 +73,18 @@ export function CompetitorIntelSection({
   };
 
   return (
-    <section id="competitor" className="fade-in scroll-mt-32">
-      <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
-        <Target className="h-5 w-5 text-primary" />
-        Competitor Intelligence
-      </h2>
-      <p className="text-sm text-muted-foreground mb-4">
-        Analyze what Reddit users say about a specific competitor.
-      </p>
-      <Card className="p-4 md:p-5">
+    <section id="competitor" className="reveal-up scroll-mt-32">
+      <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+        <div>
+          <h2 className="text-xl font-semibold section-accent">
+            🔍 Competitor Intelligence
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Analyze what Reddit says about any existing tool.
+          </p>
+        </div>
+      </div>
+      <Card className="p-5 md:p-6 bg-card border-border">
         <form onSubmit={analyze} className="flex flex-col sm:flex-row gap-2 no-print">
           <Input
             placeholder="Enter a competitor… e.g. Notion, Trello"
@@ -89,12 +92,19 @@ export function CompetitorIntelSection({
             onChange={(e) => setCompetitor(e.target.value)}
             maxLength={80}
             disabled={loading}
-            className="flex-1"
+            className="flex-1 h-11 text-[14px]"
           />
-          <Button type="submit" disabled={loading || !competitor.trim()}>
+          <Button
+            type="submit"
+            disabled={loading || !competitor.trim()}
+            className="h-11 px-6 btn-copy-orange"
+          >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Analyze →"}
           </Button>
         </form>
+        <p className="mt-2 text-xs text-[#555566]">
+          Try: Notion · Trello · Slack · Headspace
+        </p>
 
         {result && (
           <div className="mt-5 space-y-5 fade-in">

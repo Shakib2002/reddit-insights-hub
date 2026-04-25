@@ -14,11 +14,19 @@ export function TrendStatCard({ trend }: { trend?: TrendSignal }) {
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex flex-col justify-center p-4 md:p-5 bg-background/70 backdrop-blur rounded-lg border border-border cursor-help">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+          <div className="flex flex-col justify-center px-6 py-5 md:px-8 bg-card rounded-xl border border-border cursor-help min-w-[140px]">
+            <div className="text-[11px] uppercase tracking-[2px] text-[#555566] font-semibold">
               Trend
             </div>
-            <div className={`mt-1 truncate font-bold text-lg md:text-xl ${style.cls}`}>
+            <div
+              className={`mt-2 truncate text-[24px] md:text-[28px] font-bold leading-none ${
+                t.direction === "Growing"
+                  ? "stat-glow-green"
+                  : t.direction === "Declining"
+                    ? "stat-glow-red"
+                    : "text-foreground"
+              }`}
+            >
               {style.emoji} {style.label}
             </div>
           </div>

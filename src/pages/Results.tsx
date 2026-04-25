@@ -129,6 +129,40 @@ const EmptyPlaceholder = ({ text }: { text: string }) => (
   </Card>
 );
 
+// Map a niche/topic string to a relevant emoji.
+const nicheEmoji = (s: string): string => {
+  const t = s.toLowerCase();
+  const map: [RegExp, string][] = [
+    [/mobile|ios|android|app/, "📱"],
+    [/ai|machine|gpt|llm|model/, "🤖"],
+    [/health|wellness|therapy|mental|medical|doctor/, "🩺"],
+    [/fitness|workout|exercise|gym/, "💪"],
+    [/food|recipe|meal|cook|restaurant/, "🍽️"],
+    [/finance|money|budget|invest|crypto|bank/, "💰"],
+    [/edu|learn|study|course|school|student/, "🎓"],
+    [/game|gaming|play/, "🎮"],
+    [/music|audio|sound|podcast/, "🎧"],
+    [/travel|trip|hotel|flight/, "✈️"],
+    [/shop|ecommerce|store|retail|market/, "🛒"],
+    [/parent|kid|child|baby|family/, "👶"],
+    [/pet|dog|cat|animal/, "🐾"],
+    [/home|house|real estate|rent/, "🏠"],
+    [/car|auto|vehicle|drive/, "🚗"],
+    [/work|job|career|hr|hiring/, "💼"],
+    [/social|community|chat|message/, "💬"],
+    [/photo|video|camera|design/, "🎨"],
+    [/security|privacy|crypto|password/, "🔒"],
+    [/target|niche|market|focus/, "🎯"],
+    [/news|media|content|blog/, "📰"],
+    [/data|analytics|metric|dashboard/, "📊"],
+    [/calendar|schedule|time|productivity/, "⏰"],
+    [/email|mail|inbox/, "✉️"],
+    [/eco|green|climate|sustain/, "🌱"],
+  ];
+  for (const [re, e] of map) if (re.test(t)) return e;
+  return "🔍";
+};
+
 const StatCard = ({
   label,
   value,
@@ -137,6 +171,7 @@ const StatCard = ({
   successBadge,
   valueClassName,
   valueTitle,
+  glow,
 }: {
   label: string;
   value: string | number;
@@ -145,10 +180,11 @@ const StatCard = ({
   successBadge?: string;
   valueClassName?: string;
   valueTitle?: string;
+  glow?: "orange" | "green" | "red";
 }) => (
-  <div className="flex flex-col justify-center p-4 md:p-5 bg-background/70 backdrop-blur rounded-lg border border-border">
+  <div className="flex flex-col justify-center px-6 py-5 md:px-8 bg-card rounded-xl border border-border min-w-[140px]">
     <div className="flex items-center justify-between gap-2">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+      <div className="text-[11px] uppercase tracking-[2px] text-[#555566] font-semibold">
         {label}
       </div>
       {badge && (
@@ -166,14 +202,22 @@ const StatCard = ({
       )}
     </div>
     <div
-      className={`mt-1 truncate font-bold tabular-nums ${valueClassName ?? "text-2xl md:text-3xl"}`}
+      className={`mt-2 truncate font-bold tabular-nums leading-none ${
+        glow === "orange"
+          ? "stat-glow-orange"
+          : glow === "green"
+            ? "stat-glow-green"
+            : glow === "red"
+              ? "stat-glow-red"
+              : "text-foreground"
+      } ${valueClassName ?? "text-[24px] md:text-[32px]"}`}
       title={valueTitle ?? (typeof value === "string" ? value : undefined)}
     >
       {value}
     </div>
     {sub && (
       <div
-        className={`text-xs mt-0.5 ${badge ? "text-destructive line-clamp-2" : "text-muted-foreground truncate"}`}
+        className={`text-xs mt-1.5 ${badge ? "text-destructive line-clamp-2" : "text-muted-foreground truncate"}`}
       >
         {sub}
       </div>
@@ -184,13 +228,14 @@ const StatCard = ({
 const PainPointCard = ({ p }: { p: ResultsPayload["analysis"]["painPoints"][number] }) => {
   const [expanded, setExpanded] = useState(false);
   return (
-    <Card
-      className="p-4 md:p-5 border-l-[3px] flex flex-col gap-2"
-      style={{ borderLeftColor: "hsl(var(--destructive))" }}
-    >
-      <h3 className="font-semibold text-base leading-tight">{p.title}</h3>
+    <Card className="pain-card pl-5 pr-4 py-4 md:py-5 flex flex-col gap-2 border-border">
+      <h3 className="font-semibold text-[15px] leading-tight text-foreground">{p.title}</h3>
       <div>
-        <p className={`text-sm text-muted-foreground ${expanded ? "" : "line-clamp-2"}`}>
+        <p
+          className={`text-[13px] text-muted-foreground leading-[1.6] ${
+            expanded ? "" : "line-clamp-2"
+          }`}
+        >
           {p.description}
         </p>
         {p.description && p.description.length > 110 && (
@@ -203,7 +248,7 @@ const PainPointCard = ({ p }: { p: ResultsPayload["analysis"]["painPoints"][numb
           </button>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+      <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-3">
         {p.source &&
           p.source
             .split(/[,\/|]/)
@@ -242,10 +287,9 @@ const PainPointCard = ({ p }: { p: ResultsPayload["analysis"]["painPoints"][numb
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`View "${p.title}" on Reddit (opens in new tab)`}
-            className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors no-print"
+            className="ml-auto inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline no-print"
           >
-            View on Reddit
-            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            View on Reddit →
           </a>
         )}
       </div>
@@ -571,9 +615,9 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
 
         {/* 1. Hero stats bar */}
         <div
-          className="rounded-2xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-5 gap-3 fade-in bg-card shadow-card"
+          className="rounded-2xl border border-border px-6 py-6 md:px-8 grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 reveal-up bg-card shadow-card"
         >
-          <StatCard label="Pain Score" value={`${score}/100`} />
+          <StatCard label="Pain Score" value={`${score}/100`} glow="orange" />
           <StatCard
             label="Posts Found"
             value={totalFound}
@@ -595,11 +639,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             label="Avg Signal"
             value={avgSignalLabel(avgSig)}
             sub={`avg ${avgSig.toFixed(1)}`}
+            glow={
+              avgSignalLabel(avgSig) === "High"
+                ? "green"
+                : avgSignalLabel(avgSig) === "Low"
+                  ? "red"
+                  : undefined
+            }
           />
           <StatCard
             label="Top Subreddit"
             value={topSubreddit !== "—" ? topSubreddit : "—"}
-            valueClassName="text-[12px] md:text-sm font-semibold leading-tight"
+            valueClassName="text-[14px] md:text-[16px] font-semibold leading-tight"
             valueTitle={topSubreddit !== "—" ? `r/${topSubreddit}` : undefined}
           />
           <TrendStatCard trend={analysis.trend} />
@@ -638,16 +689,23 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         />
 
         {/* 3. Summary */}
-        <Card id="summary" className="p-4 md:p-5 fade-in scroll-mt-32">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+        <Card id="summary" className="summary-card p-6 md:p-7 reveal-up scroll-mt-32 relative">
+          <h2 className="text-[11px] font-semibold text-[#555566] uppercase tracking-[2px] mb-3">
             Summary
           </h2>
-          <p className="text-foreground leading-relaxed line-clamp-3">{analysis.summary}</p>
+          <p className="text-[15px] text-muted-foreground leading-[1.8] line-clamp-3">
+            {analysis.summary}
+          </p>
         </Card>
 
         {/* 4. Pain Points */}
-        <section id="pain-points" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-4">Pain Points</h2>
+        <section id="pain-points" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold section-accent">Pain Points</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {analysis.painPoints.length} found
+            </span>
+          </div>
           {analysis.painPoints.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -660,15 +718,21 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 5. Reddit Evidence */}
-        <section id="evidence" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            Reddit Evidence
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Real posts retrieved by the search — proof the analysis is grounded in actual
-            discussions.
-          </p>
+        <section id="evidence" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-semibold section-accent flex items-center">
+                Reddit Evidence
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Real posts retrieved by the search — proof the analysis is grounded in actual
+                discussions.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {redditPosts.length} posts
+            </span>
+          </div>
 
           {redditPosts.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
@@ -752,11 +816,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                 <EmptyPlaceholder text="No posts match the current filters. Try clearing them." />
               ) : (
                 <>
-                  <div className="space-y-2">
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
                     {visibleEvidence.map((post, i) => (
-                      <Card
+                      <div
                         key={i}
-                        className="p-3 md:p-4 hover:border-primary/40 transition-colors"
+                        className={`evidence-row px-4 py-3 ${
+                          i < visibleEvidence.length - 1 ? "border-b border-[#1A1A1F]" : ""
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -764,18 +830,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                               href={post.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="font-medium text-sm hover:text-primary hover:underline line-clamp-1"
+                              className="text-[14px] font-medium text-foreground hover:text-primary line-clamp-1"
                             >
                               {post.title}
                             </a>
-                            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                            <p className="text-[12px] text-[#555566] line-clamp-2 mt-1 leading-relaxed">
                               {post.snippet || "(no snippet)"}
                             </p>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <Badge variant="outline" className="text-xs font-normal">
-                                {post.subreddit}
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline" className="text-[11px] font-normal">
+                                r/{post.subreddit.replace(/^r\//i, "")}
                               </Badge>
-                              <span className="text-xs text-muted-foreground tabular-nums">
+                              <span className="text-[11px] text-muted-foreground tabular-nums">
                                 signal {post.score}
                               </span>
                             </div>
@@ -784,13 +850,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                             href={post.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-primary shrink-0 no-print"
+                            className="text-[#555566] hover:text-primary shrink-0 no-print mt-1"
                             aria-label="Open on Reddit"
                           >
                             <ExternalLink className="h-4 w-4" />
                           </a>
                         </div>
-                      </Card>
+                      </div>
                     ))}
                   </div>
                   {filteredEvidence.length > 5 && (
@@ -811,23 +877,32 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 6. Sentiment */}
-        <Card id="sentiment" className="p-4 md:p-5 fade-in scroll-mt-32">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        <Card id="sentiment" className="p-5 md:p-6 reveal-up scroll-mt-32">
+          <h2 className="text-[11px] font-semibold text-[#555566] uppercase tracking-[2px] mb-4">
             Reddit Sentiment
           </h2>
           <SentimentBars s={analysis.sentiment} />
           {analysis.sentimentSummary && (
-            <p className="text-sm text-muted-foreground mt-3 italic">{analysis.sentimentSummary}</p>
+            <p className="text-sm text-muted-foreground mt-4 italic leading-relaxed">
+              {analysis.sentimentSummary}
+            </p>
           )}
         </Card>
 
         {/* 7. App Opportunities */}
-        <section id="opportunities" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-1">App Opportunities</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Gaps in existing solutions you could fill. Click <strong>Get Blueprint</strong> for an
-            MVP plan.
-          </p>
+        <section id="opportunities" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-semibold section-accent">App Opportunities</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Gaps in existing solutions you could fill. Click <strong>Get Blueprint</strong> for an
+                MVP plan.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {opportunities.length} found
+            </span>
+          </div>
           {opportunities.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -835,28 +910,33 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
               {opportunities.map((g, i) => (
                 <Card
                   key={i}
-                  className="p-4 md:p-5 border-t-[3px] flex flex-col"
-                  style={{ borderTopColor: "hsl(var(--primary))" }}
+                  className="opp-card pt-5 px-5 pb-5 flex flex-col border-border bg-card"
                 >
-                  <h3 className="font-semibold text-base mb-2 leading-tight">{g.gap}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                  <h3 className="font-bold text-[16px] mb-2 leading-tight text-foreground">
+                    {g.gap}
+                  </h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
                     {g.description}
                   </p>
                   {g.opportunity && (
-                    <p className="text-sm italic text-success font-medium mb-4 flex-1">
-                      <span className="not-italic font-semibold opacity-80">Unique angle:</span>{" "}
-                      {g.opportunity}
+                    <p className="text-sm font-medium mb-4 flex-1 leading-relaxed">
+                      <span
+                        className="block text-[12px] font-medium mb-1"
+                        style={{ color: "#22C55E" }}
+                      >
+                        Unique angle:
+                      </span>
+                      <span className="text-foreground">{g.opportunity}</span>
                     </p>
                   )}
                   {!g.opportunity && <div className="flex-1" />}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="no-print"
+                  <button
+                    type="button"
+                    className="opp-blueprint-btn no-print mt-2"
                     onClick={() => setBlueprintFor({ name: g.gap, description: g.description })}
                   >
                     <Sparkles className="h-3.5 w-3.5" /> Get Blueprint →
-                  </Button>
+                  </button>
                 </Card>
               ))}
             </div>
@@ -864,8 +944,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 8. Competitor Gaps */}
-        <section id="gaps" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-4">Competitor Gaps</h2>
+        <section id="gaps" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold section-accent">Competitor Gaps</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {gaps.length} found
+            </span>
+          </div>
           {gaps.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -876,27 +961,32 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                   .map((t) => t.trim())
                   .filter(Boolean);
                 return (
-                  <Card
-                    key={i}
-                    className="p-4 md:p-5 border-l-[3px] h-full flex flex-col"
-                    style={{ borderLeftColor: "hsl(var(--primary))" }}
-                  >
-                    <h3 className="font-bold text-base mb-1.5 leading-tight">{g.gap}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">{g.description}</p>
+                  <Card key={i} className="gap-card p-5 h-full flex flex-col bg-card border-border">
+                    <h3 className="font-bold text-[15px] mb-1.5 leading-tight text-foreground">
+                      {g.gap}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+                      {g.description}
+                    </p>
                     {g.opportunity && (
-                      <p className="text-sm text-success font-medium mb-3 flex-1">
-                        <span className="font-semibold">Opportunity:</span> {g.opportunity}
+                      <p className="text-sm font-medium mb-3 flex-1 leading-relaxed">
+                        <span className="font-semibold" style={{ color: "#22C55E" }}>
+                          Opportunity:
+                        </span>{" "}
+                        <span className="text-foreground">{g.opportunity}</span>
                       </p>
                     )}
                     {!g.opportunity && <div className="flex-1" />}
                     {tools.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/50">
-                        <span className="text-xs text-muted-foreground self-center">Affects:</span>
+                      <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border/60">
+                        <span className="text-[11px] text-muted-foreground self-center">
+                          Affects:
+                        </span>
                         {tools.map((t, ti) => (
                           <Badge
                             key={ti}
                             variant="outline"
-                            className="text-xs font-normal bg-muted/50 text-muted-foreground"
+                            className="text-[11px] font-normal rounded-full bg-secondary text-muted-foreground"
                           >
                             {t}
                           </Badge>
@@ -922,11 +1012,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         />
 
         {/* 9. Niche Opportunities — grid */}
-        <section id="niches" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
-          <p className="text-sm text-muted-foreground mb-3">
-            Click any card to research that niche.
-          </p>
+        <section id="niches" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-semibold section-accent">Niche Opportunities</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Click any card to research that niche.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {analysis.niches.length} niches
+            </span>
+          </div>
           {analysis.niches.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -936,19 +1033,26 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                   key={i}
                   type="button"
                   onClick={() => searchNiche(n)}
-                  className="text-left p-3 rounded-lg border border-border bg-card hover:bg-primary/5 hover:border-primary/40 transition-all"
+                  className="niche-card relative text-left p-4 pb-7 rounded-xl border border-border bg-card"
                   title={n.description}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="font-semibold text-sm leading-tight">{n.niche}</span>
-                    <span
-                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${sizePillClass(n.size)}`}
-                    >
-                      {n.size}
-                    </span>
+                  <span
+                    className={`absolute top-3 right-3 text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${sizePillClass(n.size)}`}
+                  >
+                    {n.size}
+                  </span>
+                  <div className="text-2xl mb-2" aria-hidden>
+                    {nicheEmoji(`${n.niche} ${n.description ?? ""}`)}
                   </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{n.description}</p>
-                  <p className="text-[11px] text-primary mt-2 font-medium">Click to research →</p>
+                  <div className="font-semibold text-[14px] leading-tight text-foreground mb-1.5 pr-14">
+                    {n.niche}
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                    {n.description}
+                  </p>
+                  <p className="niche-cta absolute bottom-2.5 left-4 text-[11px] text-primary font-medium">
+                    Click to research →
+                  </p>
                 </button>
               ))}
             </div>
@@ -956,22 +1060,29 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 10. Potential First Users */}
-        <section id="first-users" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-4">Potential First Users</h2>
+        <section id="first-users" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold section-accent">Potential First Users</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {analysis.firstUserPersonas.length} personas
+            </span>
+          </div>
           {analysis.firstUserPersonas.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
               {analysis.firstUserPersonas.map((p, i) => (
-                <Card key={i} className="p-4 md:p-5">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-semibold text-sm leading-tight">{p.persona}</h3>
-                  </div>
-                  <p className="text-xs text-muted-foreground line-clamp-3">{p.pain}</p>
+                <Card key={i} className="p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30">
+                  <h3 className="font-semibold text-[14px] leading-tight text-foreground mb-1.5">
+                    {p.persona}
+                  </h3>
+                  <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                    {p.pain}
+                  </p>
                   {p.willingToPay && (
                     <Badge
                       variant="outline"
-                      className={`text-xs mt-2 ${payVariant(p.willingToPay)}`}
+                      className={`text-xs mt-2.5 ${payVariant(p.willingToPay)}`}
                     >
                       Pays: {p.willingToPay}
                     </Badge>
@@ -990,8 +1101,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         />
 
         {/* 11. Recommended Subreddits */}
-        <section className="fade-in no-print">
-          <h2 className="text-xl font-semibold mb-4">Recommended Subreddits</h2>
+        <section className="reveal-up no-print">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold section-accent">Recommended Subreddits</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {analysis.recommendedSubreddits.length} subs
+            </span>
+          </div>
           {analysis.recommendedSubreddits.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -1004,7 +1120,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                     href={`https://reddit.com/r/${clean}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors border border-border"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:text-primary hover:border-primary/40 transition-colors border border-border"
                   >
                     r/{clean}
                     <ExternalLink className="h-3 w-3" />
@@ -1015,43 +1131,49 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           )}
         </section>
 
-        {/* (View Source Posts removed — Reddit Evidence section above already lists them) */}
-
         {/* 11b. Weekly Digest Signup (NEW) */}
         <WeeklyDigestSignup keyword={inputs.keyword} />
 
         {/* 12. Action Bar */}
-        <div className="flex flex-wrap gap-2 pt-4 fade-in no-print">
-          <Button onClick={() => navigate("/")} variant="outline" className="flex-1 min-w-[140px]">
+        <div className="flex flex-wrap justify-center gap-3 pt-6 reveal-up no-print">
+          <Button
+            onClick={() => navigate("/")}
+            variant="outline"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+          >
             <ArrowLeft className="h-4 w-4" /> Search Again
           </Button>
-          <Button onClick={shareReport} variant="outline" className="flex-1 min-w-[120px]">
+          <Button
+            onClick={shareReport}
+            variant="outline"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+          >
             <Share2 className="h-4 w-4" /> Share
           </Button>
           <Button
             onClick={() => window.print()}
             variant="outline"
-            className="flex-1 min-w-[140px]"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
           >
             <Printer className="h-4 w-4" /> Export PDF
           </Button>
           <Button
             onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.md`, reportToMarkdown(data), "text/markdown")}
             variant="outline"
-            className="flex-1 min-w-[140px]"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
           >
             <FileText className="h-4 w-4" /> Markdown
           </Button>
           <Button
             onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.csv`, reportToCsv(data), "text/csv")}
             variant="outline"
-            className="flex-1 min-w-[140px]"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
           >
             <FileSpreadsheet className="h-4 w-4" /> CSV
           </Button>
           <Button
             onClick={copyReport}
-            className="flex-1 min-w-[140px] gradient-orange text-white border-0 hover:-translate-y-0.5 hover:shadow-glow-strong transition-all"
+            className="h-11 px-7 btn-copy-orange font-semibold"
           >
             <Copy className="h-4 w-4" /> Copy Report
           </Button>
