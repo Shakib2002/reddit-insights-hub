@@ -20,9 +20,10 @@ const EXAMPLES = [
 ];
 
 const LOADING_STEPS = [
-  "Fetching Reddit posts…",
+  "Searching Reddit…",
+  "Reading discussions…",
   "Analyzing with AI…",
-  "Building your report…",
+  "Building report…",
 ];
 
 const Index = () => {
@@ -42,8 +43,8 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyword.trim() || !appIdea.trim() || !subreddit.trim()) {
-      toast({ title: "Fill in all three fields", variant: "destructive" });
+    if (!keyword.trim() || !appIdea.trim()) {
+      toast({ title: "Keyword and app idea are required", variant: "destructive" });
       return;
     }
 
@@ -58,9 +59,13 @@ const Index = () => {
       if (redditErr) throw redditErr;
 
       setStep(1);
+      // brief pause so the "reading discussions" step is visible
+      await new Promise((r) => setTimeout(r, 600));
+
+      setStep(2);
       const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
         "analyze",
-        { body: { posts: redditData?.posts ?? [], keyword, appIdea } },
+        { body: { results: redditData?.results ?? [], keyword, appIdea } },
       );
       if (analyzeErr) {
         const msg = (analyzeErr as any).context?.body
@@ -69,7 +74,7 @@ const Index = () => {
         throw new Error(msg);
       }
 
-      setStep(2);
+      setStep(3);
       const payload: ResultsPayload = {
         inputs: { keyword, appIdea, subreddit: subreddit.replace(/^r\//, "") },
         analysis: analyzeData.analysis,
@@ -141,7 +146,9 @@ const Index = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="subreddit">Subreddit to search</Label>
+                <Label htmlFor="subreddit">
+                  Subreddit <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
                 <Input
                   id="subreddit"
                   placeholder="e.g. startups, androidapps, entrepreneur"
