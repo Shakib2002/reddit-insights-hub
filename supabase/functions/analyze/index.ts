@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { results = [], keyword, appIdea } = await req.json();
+    const { results = [], keyword, appIdea, language = "en" } = await req.json();
     const API_KEY = Deno.env.get("MODELROUTER_API_KEY");
     if (!API_KEY) throw new Error("MODELROUTER_API_KEY not configured");
 
@@ -71,7 +71,16 @@ Deno.serve(async (req) => {
       ? `The user's app idea is: "${appIdea}". Score how well this idea matches the discussions found.`
       : `The user has NOT provided a specific app idea. For "ideaMatchScore" and "ideaValidation.matchPercentage", instead score the overall opportunity strength of this topic on Reddit (0-100). For "ideaValidation.reasons", list 3 reasons why this topic is or isn't a strong opportunity for a new product.`;
 
+    const langInstruction =
+      language === "bn"
+        ? `Write ALL textual fields (summary, pain point titles & descriptions, validation reasons, competitor gaps, persona labels & pains) in Bangla (Bengali script). Keep numeric fields, "signal" enum values (High/Medium/Low), "source", and "recommendedSubreddits" in English.`
+        : language === "both"
+          ? `For every textual field (summary, pain point title & description, validation reasons, competitor gap & description, persona & pain) provide BOTH English and Bangla, in this exact format: "English text || বাংলা টেক্সট". Keep numeric fields, "signal" enum values (High/Medium/Low), "source", and "recommendedSubreddits" in English only.`
+          : `Write all textual fields in clear, natural English.`;
+
     const userPrompt = `Analyze these Reddit discussions about "${keyword}". ${ideaLine}
+
+${langInstruction}
 
 Reddit discussions found:
 ${resultsText}
