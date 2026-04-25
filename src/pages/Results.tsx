@@ -816,11 +816,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                 <EmptyPlaceholder text="No posts match the current filters. Try clearing them." />
               ) : (
                 <>
-                  <div className="space-y-2">
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
                     {visibleEvidence.map((post, i) => (
-                      <Card
+                      <div
                         key={i}
-                        className="p-3 md:p-4 hover:border-primary/40 transition-colors"
+                        className={`evidence-row px-4 py-3 ${
+                          i < visibleEvidence.length - 1 ? "border-b border-[#1A1A1F]" : ""
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -828,18 +830,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                               href={post.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="font-medium text-sm hover:text-primary hover:underline line-clamp-1"
+                              className="text-[14px] font-medium text-foreground hover:text-primary line-clamp-1"
                             >
                               {post.title}
                             </a>
-                            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                            <p className="text-[12px] text-[#555566] line-clamp-2 mt-1 leading-relaxed">
                               {post.snippet || "(no snippet)"}
                             </p>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <Badge variant="outline" className="text-xs font-normal">
-                                {post.subreddit}
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline" className="text-[11px] font-normal">
+                                r/{post.subreddit.replace(/^r\//i, "")}
                               </Badge>
-                              <span className="text-xs text-muted-foreground tabular-nums">
+                              <span className="text-[11px] text-muted-foreground tabular-nums">
                                 signal {post.score}
                               </span>
                             </div>
@@ -848,13 +850,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                             href={post.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-primary shrink-0 no-print"
+                            className="text-[#555566] hover:text-primary shrink-0 no-print mt-1"
                             aria-label="Open on Reddit"
                           >
                             <ExternalLink className="h-4 w-4" />
                           </a>
                         </div>
-                      </Card>
+                      </div>
                     ))}
                   </div>
                   {filteredEvidence.length > 5 && (
