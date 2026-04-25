@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
           existing.queryHits = (existing.queryHits ?? 1) + 1;
           continue;
         }
-        const { score, matched } = scoreResult({ title, snippet });
+        const { score, matched } = scoreResult({ title, snippet, link });
         byLink.set(link, {
           title,
           snippet,
