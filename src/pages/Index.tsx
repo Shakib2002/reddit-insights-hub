@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck } from "lucide-react";
+import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck, Target, DollarSign, CheckCircle2, Zap, Users, BarChart3, ArrowRight, Heart } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 import { dbSaveSearch, dbSaveValidation } from "@/lib/db-history";
@@ -415,19 +415,50 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <Header />
-      <main className="container max-w-3xl py-12 md:py-20">
-        <div className="text-center mb-10 fade-in">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-3">
-            Reddit<span className="text-primary">Lens</span>
+
+      {/* Decorative gradient blobs */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-0 overflow-hidden">
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-primary/20 blur-[120px] opacity-60" />
+        <div className="absolute top-40 -left-20 h-[400px] w-[400px] rounded-full bg-accent blur-[100px] opacity-40" />
+        <div className="absolute top-20 -right-20 h-[400px] w-[400px] rounded-full bg-primary/10 blur-[100px] opacity-50" />
+      </div>
+
+      <main className="container max-w-3xl py-12 md:py-16 relative z-10">
+        {/* Hero */}
+        <div className="text-center mb-8 md:mb-10 fade-in">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium mb-5">
+            <Sparkles className="h-3.5 w-3.5" />
+            Powered by AI · Real Reddit data
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 leading-[1.05]">
+            Find Real Problems
+            <br />
+            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Worth Building
+            </span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground">
-            Discover what Reddit really wants
+          <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-5">
+            Validate startup ideas in 30 seconds. Get AI-powered pain points, revenue models, and competitor gaps from real Reddit discussions.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-primary">🔥</span> 2,400+ ideas analyzed
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-yellow-500">⭐</span> Founder favorite
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-success" /> Free forever
+            </span>
+          </div>
         </div>
 
-        <Card className="p-6 md:p-8 fade-in">
+        {/* Search Card with gradient glow */}
+        <div className="relative fade-in" style={{ animationDelay: "80ms" }}>
+          <div aria-hidden className="absolute -inset-px rounded-[calc(var(--radius)+1px)] bg-gradient-to-br from-primary/30 via-primary/5 to-transparent blur-sm opacity-70" />
+          <Card className="relative p-6 md:p-8 shadow-xl border-border/60 backdrop-blur-sm bg-card/95">
           {loading ? (
             <LoadingSteps
               title={validateMode ? "Validating your idea…" : "Researching Reddit…"}
