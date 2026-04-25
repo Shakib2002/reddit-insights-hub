@@ -17,7 +17,17 @@ import {
   Sparkles,
   AlertTriangle,
   MessageSquare,
+  Search as SearchIcon,
+  X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { ResultsPayload, Niche, RedditPost } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { saveToHistory } from "@/lib/history";
