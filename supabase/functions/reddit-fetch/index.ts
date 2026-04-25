@@ -4,31 +4,41 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface RedditPost {
+interface SerperResult {
   title: string;
-  body: string;
-  score: number;
-  num_comments: number;
+  snippet: string;
+  link: string;
   subreddit: string;
 }
 
-const UA = "RedditLens/1.0 (research tool)";
+function extractSubreddit(link: string): string {
+  const m = link.match(/reddit\.com\/r\/([^\/]+)/i);
+  return m ? m[1] : "";
+}
 
-async function searchReddit(url: string): Promise<RedditPost[]> {
+async function serperSearch(query: string, apiKey: string): Promise<SerperResult[]> {
   try {
-    const res = await fetch(url, { headers: { "User-Agent": UA } });
-    if (!res.ok) return [];
+    const res = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ q: query, num: 10 }),
+    });
+    if (!res.ok) {
+      console.error("Serper error:", res.status, await res.text());
+      return [];
+    }
     const data = await res.json();
-    const children = data?.data?.children ?? [];
-    return children.map((c: any) => ({
-      title: c.data?.title ?? "",
-      body: (c.data?.selftext ?? "").slice(0, 800),
-      score: c.data?.score ?? 0,
-      num_comments: c.data?.num_comments ?? 0,
-      subreddit: c.data?.subreddit ?? "",
-    }));
+    const organic = data?.organic ?? [];
+    return organic
+      .map((o: any) => ({
+        title: o.title ?? "",
+        snippet: o.snippet ?? "",
+        link: o.link ?? "",
+        subreddit: extractSubreddit(o.link ?? ""),
+      }))
+      .filter((r: SerperResult) => r.title && r.link.includes("reddit.com"));
   } catch (e) {
-    console.error("reddit fetch failed:", e);
+    console.error("Serper fetch failed:", e);
     return [];
   }
 }
@@ -45,26 +55,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
+    if (!SERPER_API_KEY) throw new Error("SERPER_API_KEY not configured");
+
     const cleanSub = (subreddit ?? "").replace(/^r\//, "").trim();
-    const q = encodeURIComponent(keyword);
 
-    const urls: string[] = [];
-    if (cleanSub) {
-      urls.push(
-        `https://www.reddit.com/r/${cleanSub}/search.json?q=${q}&restrict_sr=1&sort=top&limit=25&t=year`,
-      );
-    }
-    urls.push(`https://www.reddit.com/search.json?q=${q}&sort=top&limit=15&t=year`);
+    const primaryQuery = cleanSub
+      ? `site:reddit.com/r/${cleanSub} ${keyword}`
+      : `site:reddit.com ${keyword} discussion`;
 
-    const results = await Promise.all(urls.map(searchReddit));
+    const painQuery = `site:reddit.com ${keyword} "I wish" OR "why doesn't" OR "I hate" OR "need an app"`;
+
+    const [primary, pain] = await Promise.all([
+      serperSearch(primaryQuery, SERPER_API_KEY),
+      serperSearch(painQuery, SERPER_API_KEY),
+    ]);
+
     const seen = new Set<string>();
-    const posts = results.flat().filter((p) => {
-      if (!p.title || seen.has(p.title)) return false;
-      seen.add(p.title);
+    const results = [...primary, ...pain].filter((r) => {
+      if (seen.has(r.link)) return false;
+      seen.add(r.link);
       return true;
     });
 
-    return new Response(JSON.stringify({ posts }), {
+    return new Response(JSON.stringify({ results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
