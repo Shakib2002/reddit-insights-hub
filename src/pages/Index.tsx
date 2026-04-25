@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
+import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 
 const EXAMPLES = [
   "mental health apps",
