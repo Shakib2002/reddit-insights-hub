@@ -5,31 +5,47 @@ const corsHeaders = {
 };
 
 const SYSTEM =
-  "You are a Reddit research expert and startup advisor. Analyze Reddit discussion snippets to extract pain points, validate app ideas, and find market opportunities. Always return valid JSON only.";
+  "You are a Reddit research expert and startup advisor. Analyze Reddit discussion snippets to extract pain points, validate app ideas, gauge sentiment, find market opportunities and niches. Always return valid JSON only.";
 
 const MODEL_ROUTER_URL = "https://api.modelrouter.app/v1/chat/completions";
 const MODEL = "gemini-3-flash-preview";
 
 function extractJson(text: string): any {
-  // Strip code fences if present
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = fenced ? fenced[1] : text;
-  // Find first { ... last }
   const start = candidate.indexOf("{");
   const end = candidate.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("No JSON object found in response");
   return JSON.parse(candidate.slice(start, end + 1));
 }
 
+function clampPct(n: any): number {
+  const v = Number(n) || 0;
+  return Math.max(0, Math.min(100, Math.round(v)));
+}
+
+function normalizeSentiment(raw: any) {
+  const pos = clampPct(raw?.positive);
+  const neu = clampPct(raw?.neutral);
+  const neg = clampPct(raw?.negative);
+  const total = pos + neu + neg;
+  if (total === 0) return { positive: 33, neutral: 34, negative: 33 };
+  // Re-normalize to sum to 100
+  const p = Math.round((pos / total) * 100);
+  const n = Math.round((neu / total) * 100);
+  return { positive: p, neutral: n, negative: 100 - p - n };
+}
+
 function normalizeAnalysis(raw: any) {
   return {
     summary: raw.summary ?? "",
     ideaMatchScore: Number(raw.ideaMatchScore ?? 0),
-    painPoints: (raw.painPoints ?? []).map((p: any) => ({
+    painPoints: (raw.painPoints ?? []).map((p: any, i: number) => ({
       title: p.title ?? "",
       description: p.description ?? "",
       source: p.source ?? p.subreddit ?? "",
       signal: p.signal ?? "Medium",
+      sourceIndex: typeof p.sourceIndex === "number" ? p.sourceIndex : i + 1,
     })),
     ideaValidation: {
       matchPercentage: Number(raw.ideaValidation?.matchPercentage ?? 0),
@@ -46,6 +62,13 @@ function normalizeAnalysis(raw: any) {
     recommendedSubreddits: (raw.recommendedSubreddits ?? []).map((s: string) =>
       s.replace(/^r\//, ""),
     ),
+    sentiment: normalizeSentiment(raw.sentiment),
+    sentimentSummary: raw.sentimentSummary ?? "",
+    niches: (raw.niches ?? []).map((n: any) => ({
+      niche: n.niche ?? "",
+      description: n.description ?? "",
+      size: ["Large", "Medium", "Small"].includes(n.size) ? n.size : "Medium",
+    })),
   };
 }
 
@@ -59,7 +82,7 @@ Deno.serve(async (req) => {
 
     const resultsText = results.length
       ? results
-          .slice(0, 20)
+          .slice(0, 25)
           .map(
             (r: any, i: number) =>
               `[${i + 1}] r/${r.subreddit || "unknown"}\nTitle: ${r.title}\nSnippet: ${r.snippet}`,
@@ -73,9 +96,9 @@ Deno.serve(async (req) => {
 
     const langInstruction =
       language === "bn"
-        ? `Write ALL textual fields (summary, pain point titles & descriptions, validation reasons, competitor gaps, persona labels & pains) in Bangla (Bengali script). Keep numeric fields, "signal" enum values (High/Medium/Low), "source", and "recommendedSubreddits" in English.`
+        ? `Write ALL textual fields (summary, sentimentSummary, pain point titles & descriptions, validation reasons, competitor gaps, persona labels & pains, niche names & descriptions) in Bangla (Bengali script). Keep numeric fields, "signal" / "size" enum values, "source", and "recommendedSubreddits" in English.`
         : language === "both"
-          ? `For every textual field (summary, pain point title & description, validation reasons, competitor gap & description, persona & pain) provide BOTH English and Bangla, in this exact format: "English text || বাংলা টেক্সট". Keep numeric fields, "signal" enum values (High/Medium/Low), "source", and "recommendedSubreddits" in English only.`
+          ? `For every textual field provide BOTH English and Bangla in this exact format: "English text || বাংলা টেক্সট". Keep numeric fields, "signal" / "size" enums, "source", and "recommendedSubreddits" in English only.`
           : `Write all textual fields in clear, natural English.`;
 
     const userPrompt = `Analyze these Reddit discussions about "${keyword}". ${ideaLine}
@@ -85,12 +108,14 @@ ${langInstruction}
 Reddit discussions found:
 ${resultsText}
 
+For each pain point, set "sourceIndex" to the [number] of the most relevant discussion above (1-based).
+
 Return ONLY a JSON object (no prose, no code fences) with this exact structure:
 {
   "summary": "2-3 sentence overview",
   "ideaMatchScore": <number 0-100>,
   "painPoints": [
-    { "title": "string", "description": "string", "source": "subreddit name without r/", "signal": "High" | "Medium" | "Low" }
+    { "title": "string", "description": "string", "source": "subreddit name without r/", "signal": "High" | "Medium" | "Low", "sourceIndex": <number 1-based index into the discussions list above> }
   ],
   "ideaValidation": {
     "matchPercentage": <number 0-100>,
@@ -102,10 +127,17 @@ Return ONLY a JSON object (no prose, no code fences) with this exact structure:
   "firstUserPersonas": [
     { "persona": "descriptive label, NOT a real username", "pain": "string" }
   ],
-  "recommendedSubreddits": ["string without r/ prefix"]
+  "recommendedSubreddits": ["string without r/ prefix"],
+  "sentiment": { "positive": <number>, "neutral": <number>, "negative": <number> },
+  "sentimentSummary": "one short sentence describing overall Reddit mood",
+  "niches": [
+    { "niche": "specific sub-niche keyword phrase searchable on Reddit", "description": "1 sentence", "size": "Large" | "Medium" | "Small" }
+  ]
 }
 
-Provide 4-5 pain points, 3 competitor gaps, 3-4 personas, and 4-6 recommended subreddits.`;
+Rules:
+- sentiment numbers MUST sum to 100.
+- Provide 4-5 pain points, 3 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches.`;
 
     const resp = await fetch(MODEL_ROUTER_URL, {
       method: "POST",
@@ -115,7 +147,7 @@ Provide 4-5 pain points, 3 competitor gaps, 3-4 personas, and 4-6 recommended su
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 2000,
+        max_tokens: 2500,
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userPrompt },
@@ -160,6 +192,17 @@ Provide 4-5 pain points, 3 competitor gaps, 3-4 personas, and 4-6 recommended su
     }
 
     const analysis = normalizeAnalysis(parsed);
+
+    // Attach the actual Reddit link to each pain point using sourceIndex
+    analysis.painPoints = analysis.painPoints.map((p: any) => {
+      const idx = (p.sourceIndex ?? 0) - 1;
+      const src = idx >= 0 && idx < results.length ? results[idx] : null;
+      return {
+        ...p,
+        link: src?.link ?? "",
+      };
+    });
+
     return new Response(JSON.stringify({ analysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
