@@ -550,13 +550,22 @@ const Index = () => {
                 </div>
               </div>
 
+              {validateMode && compareMode && (
+                <p className="text-xs text-muted-foreground text-center -mt-2">
+                  Switch to single search to validate your idea.
+                </p>
+              )}
               <Button
                 type="submit"
                 size="lg"
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base h-12"
               >
-                <Search className="h-5 w-5" />
-                {compareMode ? "Compare both" : "Analyze Reddit"}
+                {validateMode ? <ShieldCheck className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+                {validateMode
+                  ? "Validate Idea →"
+                  : compareMode
+                    ? "Compare both"
+                    : "Analyze Reddit"}
               </Button>
             </form>
           )}
