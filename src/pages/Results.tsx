@@ -1013,23 +1013,41 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </div>
 
         {/* Secondary action: load more results */}
-        {canRerun ? (
+        {rerunning ? (
+          <Card className="p-4 md:p-6 fade-in no-print">
+            <LoadingSteps
+              title="Loading more Reddit data…"
+              steps={(() => {
+                const activeIdx =
+                  rerunStep === "done"
+                    ? RERUN_STEPS.length
+                    : rerunStep
+                      ? RERUN_STEPS.findIndex((s) => s.key === rerunStep)
+                      : -1;
+                return RERUN_STEPS.map((d, i): LoadingStep => ({
+                  key: d.key,
+                  label: d.label,
+                  detail: rerunDetails[d.key],
+                  status:
+                    activeIdx === -1
+                      ? "pending"
+                      : i < activeIdx
+                        ? "done"
+                        : i === activeIdx
+                          ? "active"
+                          : "pending",
+                }));
+              })()}
+            />
+          </Card>
+        ) : canRerun ? (
           <div className="flex justify-center fade-in no-print">
             <Button
               onClick={rerunWithMore}
               variant="outline"
-              disabled={rerunning}
               className="border-primary/40 text-primary hover:bg-primary/10"
             >
-              {rerunning ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading more Reddit data…
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" /> Load 20 more Reddit posts and re-analyze →
-                </>
-              )}
+              <Plus className="h-4 w-4" /> Load 20 more Reddit posts and re-analyze →
             </Button>
           </div>
         ) : (
