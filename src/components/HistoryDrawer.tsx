@@ -70,9 +70,16 @@ export const HistoryDrawer = () => {
                     {item.painScore}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mb-2">
-                  {new Date(item.timestamp).toLocaleString()}
-                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(item.timestamp).toLocaleString()}
+                  </p>
+                  {item.kind === "validate" && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                      Validate
+                    </Badge>
+                  )}
+                </div>
                 {item.summary && (
                   <p className="text-xs text-muted-foreground line-clamp-2">
                     {item.summary}
