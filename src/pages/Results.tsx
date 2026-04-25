@@ -334,14 +334,6 @@ const Results = () => {
           },
         },
       );
-            keyword: inputs.keyword,
-            subreddit: inputs.subreddit,
-            numResults: 20,
-            extraQueries: true,
-            includeAllContext: true,
-          },
-        },
-      );
       if (redditErr) throw redditErr;
 
       // Merge with existing results, dedupe by link, keep highest score
