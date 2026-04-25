@@ -55,6 +55,14 @@ export interface SearchRationale {
   totalQueries: number;
 }
 
+export interface RedditPost {
+  title: string;
+  snippet: string;
+  link: string;
+  subreddit: string;
+  score: number;
+}
+
 export interface SearchInputs {
   keyword: string;
   appIdea: string;
@@ -63,6 +71,9 @@ export interface SearchInputs {
   effectiveSubreddits?: string[];
   language?: ReportLanguage;
   rationale?: SearchRationale;
+  redditPosts?: RedditPost[];
+  totalFound?: number;
+  serperOk?: boolean;
 }
 
 export interface ResultsPayload {

@@ -14,19 +14,24 @@ interface SerperResult {
   queryHits?: number;
 }
 
+interface SearchOutcome {
+  organic: any[];
+  status: number;
+  ok: boolean;
+}
+
 function extractSubreddit(link: string): string {
   const m = link.match(/reddit\.com\/r\/([^\/?#]+)/i);
   return m ? `r/${m[1]}` : "r/reddit";
 }
 
-// Tiered keyword sets — each scored in BOTH title and snippet (title weighted higher)
 const HIGH_SIGNALS = ["wish", "need", "want", "problem", "hate", "frustrated", "frustrating", "broken", "useless"];
 const MID_SIGNALS = ["would pay", "alternative", "looking for", "recommend", "worth it", "subscription"];
 const LOW_SIGNALS = ["anyone else", "why doesn't", "i hate", "someone should build", "need an app"];
 
-function scoreResult(title: string, snippet: string): { score: number; matched: string[] } {
-  const t = (title || "").toLowerCase();
-  const s = (snippet || "").toLowerCase();
+function scoreResult(item: { title?: string; snippet?: string }): { score: number; matched: string[] } {
+  const t = (item.title || "").toLowerCase();
+  const s = (item.snippet || "").toLowerCase();
   let score = 0;
   const matched = new Set<string>();
 
@@ -46,22 +51,26 @@ function scoreResult(title: string, snippet: string): { score: number; matched: 
   return { score, matched: [...matched] };
 }
 
-async function serperSearch(query: string, apiKey: string): Promise<any[]> {
+async function serperSearch(query: string, apiKey: string): Promise<SearchOutcome> {
   try {
     const res = await fetch("https://google.serper.dev/search", {
       method: "POST",
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query, num: 10, tbs: "qdr:m6" }),
+      body: JSON.stringify({ q: query, num: 10 }),
     });
+    const status = res.status;
     if (!res.ok) {
-      console.error("Serper error:", res.status, await res.text());
-      return [];
+      const body = await res.text();
+      console.error(`Serper [${query.slice(0, 60)}] status=${status} body=${body.slice(0, 200)}`);
+      return { organic: [], status, ok: false };
     }
     const data = await res.json();
-    return data?.organic ?? [];
+    const organic = data?.organic ?? [];
+    console.log(`Serper [${query.slice(0, 60)}] status=${status} organic=${organic.length}`);
+    return { organic, status, ok: true };
   } catch (e) {
-    console.error("Serper fetch failed:", e);
-    return [];
+    console.error(`Serper fetch failed [${query.slice(0, 60)}]:`, e);
+    return { organic: [], status: 0, ok: false };
   }
 }
 
@@ -92,7 +101,7 @@ Deno.serve(async (req) => {
       `site:reddit.com ${k} "would pay" OR "worth it" OR "subscription"`,
     ];
 
-    // 5 subreddit-specific queries: prefer the user's subreddit if provided
+    // 5 subreddit-specific queries
     const targetSubs = cleanSub
       ? [cleanSub, "startups", "Entrepreneur", "SomebodyMakeThis", "productrequest"]
       : ["startups", "Entrepreneur", "SomebodyMakeThis", "androidapps", "productrequest"];
@@ -100,14 +109,25 @@ Deno.serve(async (req) => {
 
     const allQueries = [...broadQueries, ...subQueries];
 
-    // Run all 10 in parallel
-    const batches = await Promise.all(
-      allQueries.map((q) => serperSearch(q, SERPER_API_KEY)),
-    );
+    const outcomes = await Promise.all(allQueries.map((q) => serperSearch(q, SERPER_API_KEY)));
 
-    // Combine + dedupe by URL, but track how many of the 10 queries each URL appeared in
+    // Track auth health: if every query returned a non-ok status, the key is bad
+    const anyOk = outcomes.some((o) => o.ok);
+    const totalOrganic = outcomes.reduce((sum, o) => sum + o.organic.length, 0);
+
+    let allBatches = outcomes.map((o) => o.organic);
+
+    // If every Serper call succeeded but returned zero results, try simpler fallback queries
+    if (anyOk && totalOrganic === 0) {
+      console.log("All queries returned 0 organic — running simple fallback queries");
+      const fallbackQueries = [`reddit ${k}`, `reddit ${k} app review`];
+      const fb = await Promise.all(fallbackQueries.map((q) => serperSearch(q, SERPER_API_KEY)));
+      allBatches = allBatches.concat(fb.map((o) => o.organic));
+    }
+
+    // Combine + dedupe by URL, score, track cross-query hits
     const byLink = new Map<string, SerperResult>();
-    for (const batch of batches) {
+    for (const batch of allBatches) {
       for (const o of batch) {
         const link = o?.link ?? "";
         if (!link.includes("reddit.com")) continue;
@@ -120,7 +140,7 @@ Deno.serve(async (req) => {
           existing.queryHits = (existing.queryHits ?? 1) + 1;
           continue;
         }
-        const { score, matched } = scoreResult(title, snippet);
+        const { score, matched } = scoreResult({ title, snippet });
         byLink.set(link, {
           title,
           snippet,
@@ -133,18 +153,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Cross-query boost: +2 per extra query that surfaced this URL
     const combined: SerperResult[] = [...byLink.values()].map((r) => ({
       ...r,
       score: r.score + Math.max(0, (r.queryHits ?? 1) - 1) * 2,
     }));
 
-    // Sort by score desc, take top N
     const cap = Math.max(20, Math.min(30, Number(numResults) || 20));
     combined.sort((a, b) => b.score - a.score);
     const results = combined.slice(0, cap);
 
-    // Effective subreddits
+    console.log(`reddit-fetch summary: queries=${allQueries.length} totalOrganic=${totalOrganic} unique=${combined.length} returned=${results.length} serperOk=${anyOk}`);
+
     const subCounts = new Map<string, number>();
     for (const r of results) {
       const clean = r.subreddit.replace(/^r\//, "");
@@ -156,7 +175,6 @@ Deno.serve(async (req) => {
       .slice(0, 6)
       .map(([s]) => s);
 
-    // "Why these results" rationale: top signals + cross-query overlap stats
     const signalCounts = new Map<string, number>();
     for (const r of results) {
       for (const sig of r.matchedSignals ?? []) {
@@ -175,10 +193,10 @@ Deno.serve(async (req) => {
         : 0;
 
     const rationaleParts: string[] = [];
-    rationaleParts.push(`Ran 10 parallel Reddit searches and ranked ${results.length} unique posts.`);
+    rationaleParts.push(`Ran ${allQueries.length} parallel Reddit searches and ranked ${results.length} unique posts.`);
     if (topSignals.length > 0) {
       rationaleParts.push(
-        `Top intent signals: ${topSignals.map((t) => `“${t.signal}” ×${t.count}`).join(", ")}.`,
+        `Top intent signals: ${topSignals.map((t) => `"${t.signal}" ×${t.count}`).join(", ")}.`,
       );
     }
     if (multiQueryHits > 0) {
@@ -195,7 +213,7 @@ Deno.serve(async (req) => {
       topSignals,
       multiQueryHits,
       avgScore,
-      totalQueries: 10,
+      totalQueries: allQueries.length,
     };
 
     return new Response(
@@ -204,6 +222,7 @@ Deno.serve(async (req) => {
         effectiveSubreddits,
         totalFound: results.length,
         lowData: results.length < 5,
+        serperOk: anyOk,
         rationale,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
