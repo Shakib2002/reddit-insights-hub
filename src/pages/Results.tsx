@@ -999,13 +999,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </Card>
         ) : canRerun ? (
           <div className="flex justify-center fade-in no-print">
-            <Button
+            <button
+              type="button"
               onClick={rerunWithMore}
-              variant="outline"
-              className="border-primary/40 text-primary hover:bg-primary/10"
+              className="inline-flex items-center gap-2 rounded-lg border border-primary bg-background px-6 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
             >
-              <Plus className="h-4 w-4" /> Load 20 more Reddit posts and re-analyze →
-            </Button>
+              <span aria-hidden="true">↓</span> Load 20 more Reddit posts and re-analyze
+            </button>
           </div>
         ) : (
           <div className="flex justify-center fade-in no-print">
