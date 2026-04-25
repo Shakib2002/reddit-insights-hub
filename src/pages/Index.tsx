@@ -109,7 +109,8 @@ const Index = () => {
   const [includeAllContext, setIncludeAllContext] = useState(true);
   const [language, setLanguage] = useState<"en" | "bn" | "both">("en");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [stageIdx, setStageIdx] = useState(0);
 
   // Pre-fill from /results "search this niche" via sessionStorage
   useEffect(() => {
@@ -120,11 +121,20 @@ const Index = () => {
     }
   }, []);
 
+  // Animate progress while loading: creep towards the current stage's ceiling
   useEffect(() => {
     if (!loading) return;
-    const id = setInterval(() => setStep((s) => (s + 1) % LOADING_STEPS.length), 1800);
+    const id = setInterval(() => {
+      setProgress((p) => {
+        const ceiling = LOADING_STAGES[stageIdx]?.until ?? 95;
+        if (p >= ceiling) return p;
+        // ease-out: smaller increments as it approaches the ceiling
+        const delta = Math.max(0.4, (ceiling - p) * 0.06);
+        return Math.min(ceiling, p + delta);
+      });
+    }, 200);
     return () => clearInterval(id);
-  }, [loading]);
+  }, [loading, stageIdx]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,26 +148,36 @@ const Index = () => {
     }
 
     setLoading(true);
-    setStep(0);
+    setProgress(0);
+    setStageIdx(0);
 
     try {
       if (compareMode) {
-        setStep(1);
         const [left, right] = await Promise.all([
           runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language }),
           runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language }),
         ]);
-        setStep(3);
-        const payload: ComparePayload = { mode: "compare", left, right };
-        sessionStorage.setItem("redditlens_compare", JSON.stringify(payload));
-        saveToHistory(left);
-        saveToHistory(right);
+        setStageIdx(1);
+        // Searches done by the time the promise resolves; analyze is part of runOneSearch
+        setStageIdx(2);
+        if (left.lowData || right.lowData) {
+          toast({
+            title: "Limited Reddit data found",
+            description: "Results may be less accurate.",
+          });
+        }
+        const compare: ComparePayload = {
+          mode: "compare",
+          left: left.payload,
+          right: right.payload,
+        };
+        sessionStorage.setItem("redditlens_compare", JSON.stringify(compare));
+        saveToHistory(left.payload);
+        saveToHistory(right.payload);
+        setProgress(100);
         navigate("/compare");
       } else {
-        setStep(1);
-        await new Promise((r) => setTimeout(r, 400));
-        setStep(2);
-        const payload = await runOneSearch({
+        const result = await runOneSearch({
           keyword,
           appIdea,
           subreddit,
@@ -165,9 +185,16 @@ const Index = () => {
           includeAllContext,
           language,
         });
-        setStep(3);
-        sessionStorage.setItem("redditlens_results", JSON.stringify(payload));
-        saveToHistory(payload);
+        setStageIdx(2);
+        if (result.lowData) {
+          toast({
+            title: "Limited Reddit data found",
+            description: `Only ${result.totalFound} relevant Reddit results — analysis may be less accurate.`,
+          });
+        }
+        sessionStorage.setItem("redditlens_results", JSON.stringify(result.payload));
+        saveToHistory(result.payload);
+        setProgress(100);
         navigate("/results");
       }
     } catch (e) {
