@@ -84,7 +84,18 @@ Deno.serve(async (req) => {
       return true;
     });
 
-    return new Response(JSON.stringify({ results }), {
+    // Effective subreddits: top sources actually returned, ranked by frequency
+    const subCounts = new Map<string, number>();
+    for (const r of results) {
+      if (!r.subreddit) continue;
+      subCounts.set(r.subreddit, (subCounts.get(r.subreddit) ?? 0) + 1);
+    }
+    const effectiveSubreddits = [...subCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([s]) => s);
+
+    return new Response(JSON.stringify({ results, effectiveSubreddits }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
