@@ -159,11 +159,32 @@ const PainPointCard = ({ p }: { p: ResultsPayload["analysis"]["painPoints"][numb
         )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
-        {p.source && (
-          <Badge variant="outline" className="text-xs font-normal">
-            r/{p.source}
-          </Badge>
-        )}
+        {p.source &&
+          p.source
+            .split(/[,\/|]/)
+            .map((s) => s.trim().replace(/^r\//i, ""))
+            .filter(Boolean)
+            .map((sub, idx) => {
+              const href =
+                idx === 0 && p.link ? p.link : `https://reddit.com/r/${sub}`;
+              return (
+                <a
+                  key={`${sub}-${idx}`}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open r/${sub} on Reddit (opens in new tab)`}
+                  className="no-print"
+                >
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-normal hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors cursor-pointer"
+                  >
+                    r/{sub}
+                  </Badge>
+                </a>
+              );
+            })}
         <Badge className={`text-xs ${signalVariant(p.signal)}`}>{p.signal}</Badge>
         {p.commercialIntent && (
           <Badge variant="outline" className={`text-xs ${intentVariant(p.commercialIntent)}`}>
