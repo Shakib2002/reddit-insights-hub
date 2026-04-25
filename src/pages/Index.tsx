@@ -87,7 +87,9 @@ async function runOneSearch(opts: {
   numResults: number;
   includeAllContext: boolean;
   language: "en" | "bn" | "both";
+  onStep?: (key: StepKey, detail?: string) => void;
 }): Promise<{ payload: ResultsPayload; lowData: boolean; totalFound: number }> {
+  opts.onStep?.("fetch", `Searching for "${opts.keyword}"`);
   const { data: redditData, error: redditErr } = await supabase.functions.invoke(
     "reddit-fetch",
     {
