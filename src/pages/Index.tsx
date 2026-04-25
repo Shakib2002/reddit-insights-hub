@@ -598,15 +598,31 @@ const Index = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="subreddit">
-                  Subreddit <span className="text-muted-foreground font-normal">(optional)</span>
+                  Subreddits <span className="text-muted-foreground font-normal">(optional, comma-separated)</span>
                 </Label>
                 {(() => {
-                  const query = subreddit.replace(/^r\//i, "").trim().toLowerCase();
-                  const matches = query
-                    ? SUBREDDIT_SUGGESTIONS.filter((s) => s.toLowerCase().includes(query)).slice(0, 6)
+                  // Split into existing tokens + the in-progress token (after last comma)
+                  const segments = subreddit.split(",");
+                  const lastRaw = segments[segments.length - 1] ?? "";
+                  const headRaw = segments.slice(0, -1).join(",");
+                  const lastQuery = lastRaw.replace(/^\s*r\//i, "").trim().toLowerCase();
+                  const alreadyChosen = new Set(
+                    segments
+                      .slice(0, -1)
+                      .map((s) => s.replace(/^\s*r\//i, "").trim().toLowerCase())
+                      .filter(Boolean),
+                  );
+                  const matches = lastQuery
+                    ? SUBREDDIT_SUGGESTIONS.filter(
+                        (s) =>
+                          s.toLowerCase().includes(lastQuery) &&
+                          !alreadyChosen.has(s.toLowerCase()),
+                      ).slice(0, 6)
                     : [];
-                  const pickSubreddit = (name: string) => {
-                    setSubreddit(name);
+                  const appendSubreddit = (name: string) => {
+                    // Replace the in-progress token with the picked name + ", " for the next one
+                    const head = headRaw.length > 0 ? `${headRaw.replace(/,\s*$/, "")}, ` : "";
+                    setSubreddit(`${head}${name}, `);
                     setSubOpen(false);
                     setSubActiveIdx(0);
                   };
@@ -614,7 +630,7 @@ const Index = () => {
                     <div className="relative">
                       <Input
                         id="subreddit"
-                        placeholder="e.g. startups, androidapps, entrepreneur"
+                        placeholder="e.g. startups, productivity, SaaS"
                         value={subreddit}
                         onChange={(e) => {
                           setSubreddit(e.target.value);
@@ -633,13 +649,13 @@ const Index = () => {
                             setSubActiveIdx((i) => (i - 1 + matches.length) % matches.length);
                           } else if (e.key === "Enter") {
                             e.preventDefault();
-                            pickSubreddit(matches[subActiveIdx]);
+                            appendSubreddit(matches[subActiveIdx]);
                           } else if (e.key === "Escape") {
                             setSubOpen(false);
                           }
                         }}
                         autoComplete="off"
-                        maxLength={50}
+                        maxLength={200}
                       />
                       {subOpen && matches.length > 0 && (
                         <div
@@ -654,7 +670,7 @@ const Index = () => {
                               aria-selected={i === subActiveIdx}
                               onMouseDown={(e) => {
                                 e.preventDefault();
-                                pickSubreddit(s);
+                                appendSubreddit(s);
                               }}
                               onMouseEnter={() => setSubActiveIdx(i)}
                               className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
@@ -675,14 +691,24 @@ const Index = () => {
                 {!subreddit.trim() && (
                   <div className="pt-1">
                     <p className="text-xs text-muted-foreground mb-2">
-                      Popular subreddits — click to use one:
+                      Popular subreddits — click to add (you can pick multiple):
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {SUBREDDIT_SUGGESTIONS.slice(0, 9).map((s) => (
                         <button
                           key={s}
                           type="button"
-                          onClick={() => setSubreddit(s)}
+                          onClick={() => {
+                            // Append, never replace, so users can build a list
+                            setSubreddit((prev) => {
+                              const trimmed = prev.trim().replace(/,\s*$/, "");
+                              const tokens = trimmed
+                                ? trimmed.split(/[,\s]+/).map((t) => t.replace(/^r\//i, "").toLowerCase())
+                                : [];
+                              if (tokens.includes(s.toLowerCase())) return prev;
+                              return trimmed ? `${trimmed}, ${s}` : s;
+                            });
+                          }}
                           className="px-2.5 py-1 rounded-full text-xs bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors border border-border"
                         >
                           r/{s}
