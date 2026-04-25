@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { keyword, subreddit, numResults } = await req.json();
+    const { keyword, subreddit, numResults, extraQueries } = await req.json();
     if (!keyword || typeof keyword !== "string") {
       return new Response(JSON.stringify({ error: "keyword required" }), {
         status: 400,
@@ -90,6 +90,11 @@ Deno.serve(async (req) => {
       `${k} reddit review`,
     ];
     if (cleanSub) queries.push(`${k} site:reddit.com/r/${cleanSub}`);
+    if (extraQueries) {
+      queries.push(`${k} reddit problems 2024`);
+      queries.push(`${k} reddit complaints`);
+      queries.push(`${k} reddit suggestions`);
+    }
 
     const resultsArray = await Promise.all(
       queries.map(async (query) => {
