@@ -22,12 +22,12 @@ export const Header = () => {
       className="sticky top-0 z-50 backdrop-blur-xl border-b border-border/80 print:hidden"
       style={{ background: "rgba(10,10,11,0.8)" }}
     >
-      <div className="container flex h-[60px] items-center justify-between">
+      <div className="container flex h-[72px] items-center justify-between">
         <Link to="/" className="flex items-center group" aria-label="RedditLens home">
           <img
             src={logoUrl}
             alt="RedditLens"
-            className="h-9 w-auto group-hover:scale-[1.03] transition-transform"
+            className="h-9 xs:h-10 sm:h-12 md:h-14 w-auto max-w-[60vw] group-hover:scale-[1.03] transition-transform"
           />
         </Link>
         <div className="flex items-center gap-1.5">
