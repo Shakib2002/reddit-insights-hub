@@ -309,13 +309,31 @@ const Results = () => {
   const nextCount = Math.min(MAX_RESULTS, numResults + RERUN_STEP);
   const canRerun = !inputs.loadedMore;
 
+  const setStep = (key: RerunStepKey | "done", detail?: string) => {
+    setRerunStep(key);
+    if (detail !== undefined && key !== "done") {
+      setRerunDetails((prev) => ({ ...prev, [key]: detail }));
+    }
+  };
+
   const rerunWithMore = async () => {
     setRerunning(true);
+    setRerunStep(null);
+    setRerunDetails({});
     try {
+      setStep("fetch", "Running 6 parallel searches");
       const { data: redditData, error: redditErr } = await supabase.functions.invoke(
         "reddit-fetch",
         {
           body: {
+            keyword: inputs.keyword,
+            subreddit: inputs.subreddit,
+            numResults: 20,
+            extraQueries: true,
+            includeAllContext: true,
+          },
+        },
+      );
             keyword: inputs.keyword,
             subreddit: inputs.subreddit,
             numResults: 20,
