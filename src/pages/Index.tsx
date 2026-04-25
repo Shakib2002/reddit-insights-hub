@@ -223,6 +223,14 @@ const Index = () => {
       toast({ title: "Keyword is required", variant: "destructive" });
       return;
     }
+    if (validateMode && !appIdea.trim()) {
+      toast({
+        title: "Describe your app idea",
+        description: "Idea validation needs an idea to score against.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (compareMode && !keyword2.trim()) {
       toast({ title: "Add a second keyword to compare", variant: "destructive" });
       return;
@@ -233,14 +241,31 @@ const Index = () => {
     setStageIdx(0);
 
     try {
-      if (compareMode) {
+      if (validateMode) {
+        const result = await runValidate({
+          keyword,
+          appIdea,
+          subreddit,
+          numResults,
+          language,
+        });
+        setStageIdx(VALIDATE_LOADING_STAGES.length - 1);
+        if (result.lowData) {
+          toast({
+            title: "Limited Reddit data found",
+            description: `Only ${result.totalFound} relevant Reddit results — validation may be less accurate.`,
+          });
+        }
+        sessionStorage.setItem("redditlens_validate", JSON.stringify(result.payload));
+        saveValidationToHistory(result.payload);
+        setProgress(100);
+        navigate("/validate?mode=validate");
+      } else if (compareMode) {
         const [left, right] = await Promise.all([
           runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language }),
           runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language }),
         ]);
-        setStageIdx(1);
-        // Searches done by the time the promise resolves; analyze is part of runOneSearch
-        setStageIdx(2);
+        setStageIdx(LOADING_STAGES.length - 1);
         if (left.lowData || right.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -266,7 +291,7 @@ const Index = () => {
           includeAllContext,
           language,
         });
-        setStageIdx(2);
+        setStageIdx(LOADING_STAGES.length - 1);
         if (result.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -281,7 +306,7 @@ const Index = () => {
     } catch (e) {
       console.error(e);
       toast({
-        title: "Analysis failed",
+        title: validateMode ? "Validation failed" : "Analysis failed",
         description: e instanceof Error ? e.message : "Please try again.",
         variant: "destructive",
       });
