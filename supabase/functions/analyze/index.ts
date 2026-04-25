@@ -184,7 +184,8 @@ Return ONLY this JSON (no prose, no code fences):
 
 Rules:
 - sentiment numbers MUST sum to 100
-- Provide 4-5 pain points, 3 app opportunities, 2-3 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches`;
+- Provide 4-5 pain points, 3 app opportunities, 4-5 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches
+- For each competitor gap, name the SPECIFIC existing tools (like Notion, Trello, Slack, Obsidian) in "affectedTools" — be concrete about which tools fail at what`;
 
     const resp = await fetch(AI_GATEWAY_URL, {
       method: "POST",
