@@ -877,23 +877,32 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 6. Sentiment */}
-        <Card id="sentiment" className="p-4 md:p-5 fade-in scroll-mt-32">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        <Card id="sentiment" className="p-5 md:p-6 reveal-up scroll-mt-32">
+          <h2 className="text-[11px] font-semibold text-[#555566] uppercase tracking-[2px] mb-4">
             Reddit Sentiment
           </h2>
           <SentimentBars s={analysis.sentiment} />
           {analysis.sentimentSummary && (
-            <p className="text-sm text-muted-foreground mt-3 italic">{analysis.sentimentSummary}</p>
+            <p className="text-sm text-muted-foreground mt-4 italic leading-relaxed">
+              {analysis.sentimentSummary}
+            </p>
           )}
         </Card>
 
         {/* 7. App Opportunities */}
-        <section id="opportunities" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-1">App Opportunities</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Gaps in existing solutions you could fill. Click <strong>Get Blueprint</strong> for an
-            MVP plan.
-          </p>
+        <section id="opportunities" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-semibold section-accent">App Opportunities</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Gaps in existing solutions you could fill. Click <strong>Get Blueprint</strong> for an
+                MVP plan.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {opportunities.length} found
+            </span>
+          </div>
           {opportunities.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -901,28 +910,33 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
               {opportunities.map((g, i) => (
                 <Card
                   key={i}
-                  className="p-4 md:p-5 border-t-[3px] flex flex-col"
-                  style={{ borderTopColor: "hsl(var(--primary))" }}
+                  className="opp-card pt-5 px-5 pb-5 flex flex-col border-border bg-card"
                 >
-                  <h3 className="font-semibold text-base mb-2 leading-tight">{g.gap}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                  <h3 className="font-bold text-[16px] mb-2 leading-tight text-foreground">
+                    {g.gap}
+                  </h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
                     {g.description}
                   </p>
                   {g.opportunity && (
-                    <p className="text-sm italic text-success font-medium mb-4 flex-1">
-                      <span className="not-italic font-semibold opacity-80">Unique angle:</span>{" "}
-                      {g.opportunity}
+                    <p className="text-sm font-medium mb-4 flex-1 leading-relaxed">
+                      <span
+                        className="block text-[12px] font-medium mb-1"
+                        style={{ color: "#22C55E" }}
+                      >
+                        Unique angle:
+                      </span>
+                      <span className="text-foreground">{g.opportunity}</span>
                     </p>
                   )}
                   {!g.opportunity && <div className="flex-1" />}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="no-print"
+                  <button
+                    type="button"
+                    className="opp-blueprint-btn no-print mt-2"
                     onClick={() => setBlueprintFor({ name: g.gap, description: g.description })}
                   >
                     <Sparkles className="h-3.5 w-3.5" /> Get Blueprint →
-                  </Button>
+                  </button>
                 </Card>
               ))}
             </div>
