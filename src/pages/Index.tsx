@@ -801,7 +801,7 @@ const Index = () => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base h-12"
+                className="w-full gradient-orange text-white font-semibold text-[16px] h-[52px] rounded-xl shadow-glow-strong hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(255,69,0,0.5)] transition-all border-0"
               >
                 {validateMode ? <ShieldCheck className="h-5 w-5" /> : <Search className="h-5 w-5" />}
                 {validateMode
