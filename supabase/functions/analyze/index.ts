@@ -108,7 +108,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { results = [], keyword, appIdea, language = "en" } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { results = [], keyword, appIdea, language = "en" } = body ?? {};
+    if (!keyword || typeof keyword !== "string" || !keyword.trim()) {
+      return new Response(JSON.stringify({ error: "keyword required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!Array.isArray(results)) {
+      return new Response(JSON.stringify({ error: "results must be an array" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const lang = ["en", "bn", "both"].includes(language) ? language : "en";
     const API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -127,9 +141,9 @@ Deno.serve(async (req) => {
       : `The user has NOT provided a specific app idea. Score the overall opportunity strength of this topic on Reddit.`;
 
     const langInstruction =
-      language === "bn"
+      lang === "bn"
         ? `Write ALL textual fields in Bangla (Bengali script). Keep numeric fields, "signal" / "size" / "commercialIntent" / "willingToPay" enums, "subreddit", and "recommendedSubreddits" in English.`
-        : language === "both"
+        : lang === "both"
           ? `For every textual field provide BOTH English and Bangla in this exact format: "English text || বাংলা টেক্সট". Keep numeric fields, enums, "subreddit", and "recommendedSubreddits" in English only.`
           : `Write all textual fields in clear, natural English.`;
 

@@ -19,6 +19,8 @@ import {
   MessageSquare,
   Search as SearchIcon,
   X,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,6 +33,7 @@ import {
 import type { ResultsPayload, Niche, RedditPost } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { saveToHistory } from "@/lib/history";
+import { downloadFile, reportToCsv, reportToMarkdown, safeFilename } from "@/lib/exporters";
 import { BlueprintDialog } from "@/components/BlueprintDialog";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 import { SectionNav } from "@/components/SectionNav";
@@ -103,7 +106,11 @@ const Bar = ({ label, pct, color }: { label: string; pct: number; color: string 
 );
 
 const SentimentBars = ({ s }: { s: ResultsPayload["analysis"]["sentiment"] }) => (
-  <div className="space-y-2">
+  <div
+    className="space-y-2"
+    role="img"
+    aria-label={`Reddit sentiment: ${s.positive}% positive, ${s.neutral}% neutral, ${s.negative}% negative`}
+  >
     <Bar label="Positive" pct={s.positive} color="hsl(var(--success))" />
     <Bar label="Neutral" pct={s.neutral} color="hsl(var(--muted-foreground))" />
     <Bar label="Negative" pct={s.negative} color="hsl(var(--destructive))" />
@@ -275,6 +282,16 @@ const Results = () => {
     setData(parsed);
     if (parsed.inputs.numResults) setNumResults(parsed.inputs.numResults);
   }, [navigate, searchParams]);
+
+  // Dynamic document title for SEO + tab clarity
+  useEffect(() => {
+    if (data?.inputs.keyword) {
+      document.title = `${data.inputs.keyword} — Reddit pain analysis | RedditLens`;
+    }
+    return () => {
+      document.title = "RedditLens";
+    };
+  }, [data]);
 
   const redditPosts: RedditPost[] = useMemo(
     () => data?.inputs.redditPosts ?? [],
@@ -976,6 +993,20 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             className="flex-1 min-w-[140px]"
           >
             <Printer className="h-4 w-4" /> Export PDF
+          </Button>
+          <Button
+            onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.md`, reportToMarkdown(data), "text/markdown")}
+            variant="outline"
+            className="flex-1 min-w-[140px]"
+          >
+            <FileText className="h-4 w-4" /> Markdown
+          </Button>
+          <Button
+            onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.csv`, reportToCsv(data), "text/csv")}
+            variant="outline"
+            className="flex-1 min-w-[140px]"
+          >
+            <FileSpreadsheet className="h-4 w-4" /> CSV
           </Button>
           <Button
             onClick={copyReport}

@@ -12,6 +12,8 @@ import { Slider } from "@/components/ui/slider";
 import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
+import { dbSaveSearch, dbSaveValidation } from "@/lib/db-history";
+import { useAuth } from "@/hooks/useAuth";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 
 const EXAMPLES = [
@@ -216,6 +218,7 @@ async function runValidate(opts: {
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [keyword, setKeyword] = useState("");
   const [keyword2, setKeyword2] = useState("");
   const [compareMode, setCompareMode] = useState(false);
@@ -296,6 +299,11 @@ const Index = () => {
         }
         sessionStorage.setItem("redditlens_validate", JSON.stringify(result.payload));
         saveValidationToHistory(result.payload);
+        if (user) {
+          dbSaveValidation(user.id, result.payload).catch((err) =>
+            console.warn("DB save failed (non-blocking)", err),
+          );
+        }
         setActiveStep("done");
         navigate("/validate?mode=validate");
       } else if (compareMode) {
@@ -321,6 +329,10 @@ const Index = () => {
         sessionStorage.setItem("redditlens_compare", JSON.stringify(compare));
         saveToHistory(left.payload);
         saveToHistory(right.payload);
+        if (user) {
+          dbSaveSearch(user.id, left.payload).catch(() => {});
+          dbSaveSearch(user.id, right.payload).catch(() => {});
+        }
         setActiveStep("done");
         navigate("/compare");
       } else {
@@ -342,6 +354,9 @@ const Index = () => {
         }
         sessionStorage.setItem("redditlens_results", JSON.stringify(result.payload));
         saveToHistory(result.payload);
+        if (user) {
+          dbSaveSearch(user.id, result.payload).catch(() => {});
+        }
         setActiveStep("done");
         navigate("/results");
       }
