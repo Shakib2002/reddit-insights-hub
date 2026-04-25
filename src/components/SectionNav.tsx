@@ -62,8 +62,8 @@ export function SectionNav({ items, topOffset = 60 }: SectionNavProps) {
   return (
     <nav
       aria-label="Report sections"
-      className="sticky z-30 -mx-4 md:-mx-0 bg-background/95 backdrop-blur border-b border-border no-print"
-      style={{ top: topOffset }}
+      className="sticky z-30 -mx-4 md:-mx-0 backdrop-blur-xl border-b border-border no-print"
+      style={{ top: topOffset, background: "rgba(10,10,11,0.9)" }}
     >
       <ul className="flex gap-1 overflow-x-auto px-4 md:px-2 py-2 no-scrollbar">
         {items.map((it) => {
