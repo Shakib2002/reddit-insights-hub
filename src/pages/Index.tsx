@@ -167,6 +167,7 @@ const Index = () => {
   const [keyword, setKeyword] = useState("");
   const [keyword2, setKeyword2] = useState("");
   const [compareMode, setCompareMode] = useState(false);
+  const [validateMode, setValidateMode] = useState(false);
   const [appIdea, setAppIdea] = useState("");
   const [subreddit, setSubreddit] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
