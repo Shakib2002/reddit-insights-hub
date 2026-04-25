@@ -47,7 +47,7 @@ async function runOneSearch(opts: {
   numResults: number;
   includeAllContext: boolean;
   language: "en" | "bn" | "both";
-}): Promise<ResultsPayload> {
+}): Promise<{ payload: ResultsPayload; lowData: boolean; totalFound: number }> {
   const { data: redditData, error: redditErr } = await supabase.functions.invoke(
     "reddit-fetch",
     {
