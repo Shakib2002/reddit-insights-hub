@@ -110,6 +110,9 @@ export interface SearchInputs {
   serperOk?: boolean;
   debug?: {
     totalFound: number;
+    totalFetched?: number;
+    redditCount?: number;
+    finalCount?: number;
     queriesRun: number;
     apiKeySet: boolean;
     anySerperOk?: boolean;
