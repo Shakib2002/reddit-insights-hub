@@ -1020,6 +1020,7 @@ const Index = () => {
               </div>
             ))}
           </div>
+          </div>
         </section>
       )}
 
