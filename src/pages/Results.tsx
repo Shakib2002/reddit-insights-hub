@@ -618,7 +618,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
 
         {/* 1. Hero stats bar */}
         <div
-          className="rounded-2xl border border-border px-6 py-6 md:px-8 grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 reveal-up bg-card shadow-card"
+          className="rounded-2xl border border-border px-4 py-4 md:px-6 md:py-5 grid grid-cols-2 md:grid-cols-5 gap-x-0 gap-y-0 reveal-up bg-card shadow-card"
         >
           <StatCard label="Pain Score" value={`${score}/100`} glow="orange" />
           <StatCard
@@ -626,10 +626,10 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             value={redditCount > 0 ? `${redditCount} Reddit` : totalFound > 0 ? "AI insights" : "0 posts"}
             valueClassName={
               redditCount > 0
-                ? "text-[20px] md:text-[24px] font-bold text-green-500"
+                ? "text-[18px] md:text-[20px] font-bold text-green-500"
                 : totalFound > 0
-                  ? "text-[20px] md:text-[24px] font-bold text-yellow-500"
-                  : "text-[20px] md:text-[24px] font-bold text-red-500"
+                  ? "text-[18px] md:text-[20px] font-bold text-yellow-500"
+                  : "text-[18px] md:text-[20px] font-bold text-red-500"
             }
             sub={
               totalFound === 0 && inputs.debug?.apiKeySet === false
