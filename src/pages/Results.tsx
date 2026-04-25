@@ -283,6 +283,16 @@ const Results = () => {
     if (parsed.inputs.numResults) setNumResults(parsed.inputs.numResults);
   }, [navigate, searchParams]);
 
+  // Dynamic document title for SEO + tab clarity
+  useEffect(() => {
+    if (data?.inputs.keyword) {
+      document.title = `${data.inputs.keyword} — Reddit pain analysis | RedditLens`;
+    }
+    return () => {
+      document.title = "RedditLens";
+    };
+  }, [data]);
+
   const redditPosts: RedditPost[] = useMemo(
     () => data?.inputs.redditPosts ?? [],
     [data],
