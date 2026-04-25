@@ -151,11 +151,37 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                 <span className="font-medium text-foreground">Idea:</span> {inputs.appIdea}
               </p>
             )}
-            {inputs.subreddit && (
-              <p className="text-sm text-muted-foreground">
-                Searched in <span className="font-medium">r/{inputs.subreddit}</span>
-              </p>
-            )}
+            {(() => {
+              const sources =
+                inputs.subreddit
+                  ? [inputs.subreddit]
+                  : (inputs.effectiveSubreddits ?? []);
+              if (sources.length === 0) {
+                return (
+                  <p className="text-sm text-muted-foreground">
+                    Searched <span className="font-medium">across Reddit</span>
+                  </p>
+                );
+              }
+              return (
+                <div className="text-sm text-muted-foreground">
+                  <span>{inputs.subreddit ? "Searched in " : "Top sources: "}</span>
+                  <span className="inline-flex flex-wrap gap-1.5 align-middle">
+                    {sources.map((s) => (
+                      <a
+                        key={s}
+                        href={`https://reddit.com/r/${s}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-foreground hover:text-primary transition-colors"
+                      >
+                        r/{s}
+                      </a>
+                    ))}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
           <div className="flex flex-col items-center shrink-0">
             <div className="relative h-32 w-32 rounded-full bg-primary text-primary-foreground flex flex-col items-center justify-center shadow-lg">
