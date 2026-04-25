@@ -1068,23 +1068,6 @@ const Index = () => {
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-muted/20 py-8 mt-4">
-        <div className="container max-w-5xl flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-              R
-            </div>
-            <span className="font-medium text-foreground">RedditLens</span>
-            <span className="text-xs">— Discover what Reddit really wants</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span>Made with</span>
-            <Heart className="h-3.5 w-3.5 fill-primary text-primary" />
-            <span>for founders</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
