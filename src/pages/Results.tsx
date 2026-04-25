@@ -111,11 +111,13 @@ const StatCard = ({
   value,
   sub,
   badge,
+  successBadge,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   badge?: string;
+  successBadge?: string;
 }) => (
   <div className="flex flex-col justify-center p-4 md:p-5 bg-background/70 backdrop-blur rounded-lg border border-border">
     <div className="flex items-center justify-between gap-2">
@@ -128,6 +130,11 @@ const StatCard = ({
           title={sub}
         >
           {badge}
+        </span>
+      )}
+      {!badge && successBadge && (
+        <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-green-600 text-white">
+          {successBadge}
         </span>
       )}
     </div>
