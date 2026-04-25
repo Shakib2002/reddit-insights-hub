@@ -349,21 +349,49 @@ const Index = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Mode toggle */}
+              <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => { setValidateMode(false); }}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center justify-center gap-1.5 ${
+                    !validateMode
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Search className="h-4 w-4" /> Search Mode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setValidateMode(true); setCompareMode(false); }}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center justify-center gap-1.5 ${
+                    validateMode
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <ShieldCheck className="h-4 w-4" /> Validate My Idea
+                </button>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="keyword">
-                    {compareMode ? "Keyword A" : "Keyword or topic"}
+                    {compareMode ? "Keyword A" : validateMode ? "Topic to research on Reddit" : "Keyword or topic"}
                   </Label>
-                  <Button
-                    type="button"
-                    variant={compareMode ? "default" : "outline"}
-                    size="sm"
-                    className={`h-7 gap-1 text-xs ${compareMode ? "bg-primary hover:bg-primary/90" : ""}`}
-                    onClick={() => setCompareMode((v) => !v)}
-                  >
-                    <GitCompare className="h-3.5 w-3.5" />
-                    Compare
-                  </Button>
+                  {!validateMode && (
+                    <Button
+                      type="button"
+                      variant={compareMode ? "default" : "outline"}
+                      size="sm"
+                      className={`h-7 gap-1 text-xs ${compareMode ? "bg-primary hover:bg-primary/90" : ""}`}
+                      onClick={() => setCompareMode((v) => !v)}
+                    >
+                      <GitCompare className="h-3.5 w-3.5" />
+                      Compare
+                    </Button>
+                  )}
                 </div>
                 <Input
                   id="keyword"
