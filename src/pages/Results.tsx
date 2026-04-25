@@ -452,7 +452,14 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           <div className="grid gap-3 md:grid-cols-2">
             {analysis.firstUserPersonas.map((p, i) => (
               <Card key={i} className="p-5">
-                <h3 className="font-semibold mb-1">{p.persona}</h3>
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <h3 className="font-semibold">{p.persona}</h3>
+                  {p.willingToPay && (
+                    <Badge variant="outline" className={`text-xs shrink-0 ${payVariant(p.willingToPay)}`}>
+                      Willing to pay: {p.willingToPay}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">{p.pain}</p>
               </Card>
             ))}
