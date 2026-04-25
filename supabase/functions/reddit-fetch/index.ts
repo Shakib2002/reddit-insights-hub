@@ -19,27 +19,40 @@ function extractSubreddit(link: string): string {
   return m ? `r/${m[1]}` : "r/reddit";
 }
 
-const HIGH_SIGNALS = ["wish", "need", "want", "problem", "hate", "frustrated", "frustrating", "broken", "useless"];
-const MID_SIGNALS = ["would pay", "alternative", "looking for", "recommend", "worth it", "subscription"];
-const LOW_SIGNALS = ["anyone else", "why doesn't", "i hate", "someone should build", "need an app"];
+const HIGH_SIGNALS = [
+  "wish", "need", "want", "problem", "hate",
+  "frustrated", "annoying", "broken", "terrible",
+  "would pay", "please build", "someone should",
+];
+const MID_SIGNALS = [
+  "alternative", "looking for", "recommend",
+  "better than", "switch from", "replace",
+  "disappointed", "missing feature", "lacks",
+];
+const LOW_SIGNALS = [
+  "anyone else", "how do you", "what do you use",
+  "thoughts on", "review", "experience with",
+];
+const HIGH_VALUE_SUBS = [
+  "startups", "entrepreneur", "somebodymakethis",
+  "androidapps", "productrequest", "iosapps",
+];
 
-function scoreResult(item: { title?: string; snippet?: string }): { score: number; matched: string[] } {
-  const t = (item.title || "").toLowerCase();
-  const s = (item.snippet || "").toLowerCase();
+function scoreResult(item: { title?: string; snippet?: string; link?: string }): { score: number; matched: string[] } {
+  const combined = `${item.title || ""} ${item.snippet || ""}`.toLowerCase();
   let score = 0;
   const matched = new Set<string>();
   for (const w of HIGH_SIGNALS) {
-    if (t.includes(w)) { score += 3; matched.add(w); }
-    if (s.includes(w)) { score += 2; matched.add(w); }
+    if (combined.includes(w)) { score += 3; matched.add(w); }
   }
   for (const w of MID_SIGNALS) {
-    if (t.includes(w)) { score += 2; matched.add(w); }
-    if (s.includes(w)) { score += 1; matched.add(w); }
+    if (combined.includes(w)) { score += 2; matched.add(w); }
   }
   for (const w of LOW_SIGNALS) {
-    if (t.includes(w)) { score += 2; matched.add(w); }
-    if (s.includes(w)) { score += 1; matched.add(w); }
+    if (combined.includes(w)) { score += 1; matched.add(w); }
   }
+  const sub = (extractSubreddit(item.link || "").replace(/^r\//, "")).toLowerCase();
+  if (sub && HIGH_VALUE_SUBS.some((s) => sub.includes(s))) score += 2;
   return { score, matched: [...matched] };
 }
 
@@ -59,7 +72,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { keyword, subreddit, numResults } = await req.json();
+    const { keyword, subreddit, numResults, extraQueries } = await req.json();
     if (!keyword || typeof keyword !== "string") {
       return new Response(JSON.stringify({ error: "keyword required" }), {
         status: 400,
@@ -77,6 +90,11 @@ Deno.serve(async (req) => {
       `${k} reddit review`,
     ];
     if (cleanSub) queries.push(`${k} site:reddit.com/r/${cleanSub}`);
+    if (extraQueries) {
+      queries.push(`${k} reddit problems 2024`);
+      queries.push(`${k} reddit complaints`);
+      queries.push(`${k} reddit suggestions`);
+    }
 
     const resultsArray = await Promise.all(
       queries.map(async (query) => {
@@ -118,7 +136,7 @@ Deno.serve(async (req) => {
           existing.queryHits = (existing.queryHits ?? 1) + 1;
           continue;
         }
-        const { score, matched } = scoreResult({ title, snippet });
+        const { score, matched } = scoreResult({ title, snippet, link });
         byLink.set(link, {
           title,
           snippet,

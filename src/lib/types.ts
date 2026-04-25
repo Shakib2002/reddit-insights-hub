@@ -26,6 +26,7 @@ export interface CompetitorGap {
   gap: string;
   description: string;
   opportunity?: string;
+  affectedTools?: string;
 }
 
 export interface Persona {
@@ -68,6 +69,7 @@ export interface SearchInputs {
   appIdea: string;
   subreddit: string;
   numResults?: number;
+  loadedMore?: boolean;
   effectiveSubreddits?: string[];
   language?: ReportLanguage;
   rationale?: SearchRationale;

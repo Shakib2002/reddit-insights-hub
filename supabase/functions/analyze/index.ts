@@ -66,8 +66,9 @@ function normalizeAnalysis(raw: any) {
     gap: g.gap ?? "",
     description: g.description ?? "",
     opportunity: g.opportunity ?? "",
+    affectedTools: g.affectedTools ?? "",
   }));
-  const competitorGaps = [...fromOpps, ...fromGaps].slice(0, 6);
+  const competitorGaps = [...fromOpps, ...fromGaps].slice(0, 8);
 
   return {
     summary: raw.summary ?? "",
@@ -168,7 +169,7 @@ Return ONLY this JSON (no prose, no code fences):
     { "name": "App name", "description": "What it does and which pain point it solves", "uniqueAngle": "What makes it different from existing solutions" }
   ],
   "competitorGaps": [
-    { "gap": "specific gap title", "description": "what existing solutions are missing", "opportunity": "how to exploit this gap" }
+    { "gap": "specific gap title", "description": "what existing solutions are missing", "opportunity": "how to exploit this gap", "affectedTools": "comma-separated existing tools that fail at this, e.g. Notion, Trello, Slack" }
   ],
   "firstUserPersonas": [
     { "persona": "User type e.g. Burnt-out developer", "pain": "Their specific pain in one sentence", "willingToPay": "Yes" | "Maybe" | "No" }
@@ -183,7 +184,8 @@ Return ONLY this JSON (no prose, no code fences):
 
 Rules:
 - sentiment numbers MUST sum to 100
-- Provide 4-5 pain points, 3 app opportunities, 2-3 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches`;
+- Provide 4-5 pain points, 3 app opportunities, 4-5 competitor gaps, 3-4 personas, 4-6 recommended subreddits, and 3-4 niches
+- For each competitor gap, name the SPECIFIC existing tools (like Notion, Trello, Slack, Obsidian) in "affectedTools" — be concrete about which tools fail at what`;
 
     const resp = await fetch(AI_GATEWAY_URL, {
       method: "POST",

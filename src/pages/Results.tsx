@@ -66,9 +66,15 @@ const sizeChipVariant = (s: Niche["size"]) => {
 };
 
 const avgSignalLabel = (avg: number): "High" | "Medium" | "Low" => {
-  if (avg >= 6) return "High";
-  if (avg >= 3) return "Medium";
+  if (avg >= 4) return "High";
+  if (avg >= 2) return "Medium";
   return "Low";
+};
+
+const sizePillClass = (s: Niche["size"]) => {
+  if (s === "Large") return "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300";
+  if (s === "Medium") return "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
+  return "bg-muted text-muted-foreground";
 };
 
 const Bar = ({ label, pct, color }: { label: string; pct: number; color: string }) => (
@@ -105,11 +111,13 @@ const StatCard = ({
   value,
   sub,
   badge,
+  successBadge,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   badge?: string;
+  successBadge?: string;
 }) => (
   <div className="flex flex-col justify-center p-4 md:p-5 bg-background/70 backdrop-blur rounded-lg border border-border">
     <div className="flex items-center justify-between gap-2">
@@ -122,6 +130,11 @@ const StatCard = ({
           title={sub}
         >
           {badge}
+        </span>
+      )}
+      {!badge && successBadge && (
+        <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-green-600 text-white">
+          {successBadge}
         </span>
       )}
     </div>
@@ -283,7 +296,7 @@ const Results = () => {
   const { inputs, analysis } = data;
 
   const nextCount = Math.min(MAX_RESULTS, numResults + RERUN_STEP);
-  const canRerun = nextCount > numResults;
+  const canRerun = !inputs.loadedMore;
 
   const rerunWithMore = async () => {
     setRerunning(true);
@@ -294,18 +307,32 @@ const Results = () => {
           body: {
             keyword: inputs.keyword,
             subreddit: inputs.subreddit,
-            numResults: nextCount,
+            numResults: 20,
+            extraQueries: true,
             includeAllContext: true,
           },
         },
       );
       if (redditErr) throw redditErr;
 
+      // Merge with existing results, dedupe by link, keep highest score
+      const existing: RedditPost[] = inputs.redditPosts ?? [];
+      const fresh: RedditPost[] = redditData?.results ?? [];
+      const byLink = new Map<string, RedditPost>();
+      for (const p of [...existing, ...fresh]) {
+        if (!p?.link) continue;
+        const prev = byLink.get(p.link);
+        if (!prev || (p.score ?? 0) > (prev.score ?? 0)) {
+          byLink.set(p.link, p);
+        }
+      }
+      const merged = [...byLink.values()].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
       const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
         "analyze",
         {
           body: {
-            results: redditData?.results ?? [],
+            results: merged,
             keyword: inputs.keyword,
             appIdea: inputs.appIdea,
             language: inputs.language ?? "en",
@@ -319,27 +346,53 @@ const Results = () => {
         throw new Error(msg);
       }
 
+      // Recompute effective subreddits + avg score from merged set
+      const subCounts = new Map<string, number>();
+      for (const r of merged) {
+        const clean = (r.subreddit || "").replace(/^r\//, "");
+        if (!clean || clean === "reddit") continue;
+        subCounts.set(clean, (subCounts.get(clean) ?? 0) + 1);
+      }
+      const effectiveSubreddits = [...subCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([s]) => s);
+      const avgScore =
+        merged.length > 0
+          ? Math.round((merged.reduce((s, r) => s + (r.score ?? 0), 0) / merged.length) * 10) / 10
+          : 0;
+
       const updated: ResultsPayload = {
         inputs: {
           ...inputs,
-          numResults: nextCount,
-          effectiveSubreddits:
-            redditData?.effectiveSubreddits ?? inputs.effectiveSubreddits ?? [],
-          rationale: redditData?.rationale ?? inputs.rationale,
-          redditPosts: redditData?.results ?? inputs.redditPosts ?? [],
-          totalFound: Number(redditData?.totalFound ?? redditData?.results?.length ?? 0),
+          numResults: merged.length,
+          loadedMore: true,
+          effectiveSubreddits,
+          rationale: {
+            ...(inputs.rationale ?? {
+              summary: "",
+              topSignals: [],
+              multiQueryHits: 0,
+              avgScore: 0,
+              totalQueries: 0,
+            }),
+            avgScore,
+            summary: `Analyzed ${merged.length} merged Reddit posts after loading more.`,
+          },
+          redditPosts: merged,
+          totalFound: merged.length,
           serperOk: redditData?.serperOk !== false,
-        debug: redditData?.debug,
+          debug: redditData?.debug,
         },
         analysis: analyzeData.analysis,
       };
       sessionStorage.setItem("redditlens_results", JSON.stringify(updated));
       saveToHistory(updated);
       setData(updated);
-      setNumResults(nextCount);
+      setNumResults(merged.length);
       toast({
         title: "Report updated",
-        description: `Re-analyzed with ${nextCount} Reddit results.`,
+        description: `Re-analyzed with ${merged.length} merged Reddit posts.`,
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
@@ -465,6 +518,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                 ? "API Key Issue?"
                 : undefined
             }
+            successBadge={inputs.loadedMore ? "Updated" : undefined}
           />
           <StatCard
             label="Avg Signal"
@@ -725,39 +779,74 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
             <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
-              {gaps.map((g, i) => (
-                <Card key={i} className="p-4 md:p-5">
-                  <h3 className="font-semibold text-sm mb-1.5">{g.gap}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{g.description}</p>
-                </Card>
-              ))}
+              {gaps.map((g, i) => {
+                const tools = (g.affectedTools || "")
+                  .split(/[,;|]/)
+                  .map((t) => t.trim())
+                  .filter(Boolean);
+                return (
+                  <Card
+                    key={i}
+                    className="p-4 md:p-5 border-l-[3px] h-full flex flex-col"
+                    style={{ borderLeftColor: "hsl(var(--primary))" }}
+                  >
+                    <h3 className="font-bold text-base mb-1.5 leading-tight">{g.gap}</h3>
+                    <p className="text-sm text-muted-foreground mb-2">{g.description}</p>
+                    {g.opportunity && (
+                      <p className="text-sm text-success font-medium mb-3 flex-1">
+                        <span className="font-semibold">Opportunity:</span> {g.opportunity}
+                      </p>
+                    )}
+                    {!g.opportunity && <div className="flex-1" />}
+                    {tools.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/50">
+                        <span className="text-xs text-muted-foreground self-center">Affects:</span>
+                        {tools.map((t, ti) => (
+                          <Badge
+                            key={ti}
+                            variant="outline"
+                            className="text-xs font-normal bg-muted/50 text-muted-foreground"
+                          >
+                            {t}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </section>
 
-        {/* 9. Niche Opportunities — horizontal chips */}
+        {/* 9. Niche Opportunities — grid */}
         <section className="fade-in">
           <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
           <p className="text-sm text-muted-foreground mb-3">
-            Click any chip to research that niche.
+            Click any card to research that niche.
           </p>
           {analysis.niches.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {analysis.niches.map((n, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => searchNiche(n)}
-                  className="snap-start shrink-0 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm hover:border-primary/60 hover:shadow-sm transition-all"
+                  className="text-left p-3 rounded-lg border border-border bg-card hover:bg-primary/5 hover:border-primary/40 transition-all"
                   title={n.description}
                 >
-                  <span>🎯</span>
-                  <span className="font-medium">{n.niche}</span>
-                  <Badge variant="outline" className={`text-xs ${sizeChipVariant(n.size)}`}>
-                    {n.size}
-                  </Badge>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="font-semibold text-sm leading-tight">{n.niche}</span>
+                    <span
+                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${sizePillClass(n.size)}`}
+                    >
+                      {n.size}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{n.description}</p>
+                  <p className="text-[11px] text-primary mt-2 font-medium">Click to research →</p>
                 </button>
               ))}
             </div>
@@ -840,26 +929,31 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </Button>
         </div>
 
-        {/* Secondary action: rerun with more results */}
-        {canRerun && (
+        {/* Secondary action: load more results */}
+        {canRerun ? (
           <div className="flex justify-center fade-in no-print">
             <Button
               onClick={rerunWithMore}
-              variant="ghost"
-              size="sm"
+              variant="outline"
               disabled={rerunning}
-              className="text-muted-foreground"
+              className="border-primary/40 text-primary hover:bg-primary/10"
             >
               {rerunning ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Re-analyzing…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading more Reddit data…
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" /> Use more results ({nextCount})
+                  <Plus className="h-4 w-4" /> Load 20 more Reddit posts and re-analyze →
                 </>
               )}
             </Button>
+          </div>
+        ) : (
+          <div className="flex justify-center fade-in no-print">
+            <p className="text-sm text-muted-foreground">
+              ✓ Analyzed {totalFound} total Reddit posts
+            </p>
           </div>
         )}
       </main>
