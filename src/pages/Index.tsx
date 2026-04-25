@@ -227,8 +227,15 @@ const Index = () => {
   const [includeAllContext, setIncludeAllContext] = useState(true);
   const [language, setLanguage] = useState<"en" | "bn" | "both">("en");
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [stageIdx, setStageIdx] = useState(0);
+  const [activeStep, setActiveStep] = useState<StepKey | "done" | null>(null);
+  const [stepDetails, setStepDetails] = useState<Partial<Record<StepKey, string>>>({});
+
+  const onStep = (key: StepKey, detail?: string) => {
+    setActiveStep(key);
+    if (detail !== undefined) {
+      setStepDetails((prev) => ({ ...prev, [key]: detail }));
+    }
+  };
 
   // Pre-fill from /results "search this niche" + ?mode=validate URL hint
   useEffect(() => {
