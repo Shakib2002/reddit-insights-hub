@@ -559,9 +559,19 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </div>
         </div>
 
+        {/* 0. Build or Skip Verdict (NEW) */}
+        {analysis.buildOrSkip && (
+          <BuildOrSkipVerdict
+            verdict={analysis.buildOrSkip}
+            keyword={inputs.keyword}
+            painScore={score}
+            trend={analysis.trend}
+          />
+        )}
+
         {/* 1. Hero stats bar */}
         <div
-          className="rounded-xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-4 gap-3 fade-in"
+          className="rounded-xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-5 gap-3 fade-in"
           style={{ background: "hsl(16 100% 97%)" }}
         >
           <StatCard label="Pain Score" value={`${score}/100`} />
@@ -593,6 +603,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             valueClassName="text-[12px] md:text-sm font-semibold leading-tight"
             valueTitle={topSubreddit !== "—" ? `r/${topSubreddit}` : undefined}
           />
+          <TrendStatCard trend={analysis.trend} />
         </div>
 
         {/* 2. Warning banner if no Reddit data */}
@@ -612,14 +623,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
 
         <SectionNav
           items={[
+            ...(analysis.buildOrSkip ? [{ id: "verdict", label: "Verdict" }] : []),
             { id: "summary", label: "Summary" },
             { id: "pain-points", label: "Pain Points" },
             { id: "evidence", label: "Evidence" },
             { id: "sentiment", label: "Sentiment" },
             { id: "opportunities", label: "Opportunities" },
             { id: "gaps", label: "Gaps" },
+            ...(analysis.revenueModels && analysis.revenueModels.length > 0 ? [{ id: "revenue", label: "Revenue" }] : []),
+            { id: "competitor", label: "Competitor" },
             { id: "niches", label: "Niches" },
             { id: "first-users", label: "First Users" },
+            { id: "fit", label: "Fit" },
           ]}
         />
 
