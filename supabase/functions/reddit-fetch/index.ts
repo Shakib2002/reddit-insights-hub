@@ -9,34 +9,43 @@ interface SerperResult {
   snippet: string;
   link: string;
   subreddit: string;
+  score: number;
 }
 
 function extractSubreddit(link: string): string {
-  const m = link.match(/reddit\.com\/r\/([^\/]+)/i);
-  return m ? m[1] : "";
+  const m = link.match(/reddit\.com\/r\/([^\/?#]+)/i);
+  return m ? `r/${m[1]}` : "r/reddit";
 }
 
-async function serperSearch(query: string, apiKey: string, num: number): Promise<SerperResult[]> {
+function scoreResult(title: string, snippet: string): number {
+  const t = (title || "").toLowerCase();
+  const s = (snippet || "").toLowerCase();
+  let score = 0;
+
+  const high = ["wish", "need", "want", "problem", "hate", "frustrated"];
+  const mid = ["would pay", "alternative", "looking for"];
+  const low = ["anyone else", "why doesn't", "i hate"];
+
+  for (const w of high) if (t.includes(w)) score += 3;
+  for (const w of mid) if (t.includes(w)) score += 2;
+  for (const w of low) if (s.includes(w)) score += 1;
+
+  return score;
+}
+
+async function serperSearch(query: string, apiKey: string): Promise<any[]> {
   try {
     const res = await fetch("https://google.serper.dev/search", {
       method: "POST",
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query, num }),
+      body: JSON.stringify({ q: query, num: 10, tbs: "qdr:m6" }),
     });
     if (!res.ok) {
       console.error("Serper error:", res.status, await res.text());
       return [];
     }
     const data = await res.json();
-    const organic = data?.organic ?? [];
-    return organic
-      .map((o: any) => ({
-        title: o.title ?? "",
-        snippet: o.snippet ?? "",
-        link: o.link ?? "",
-        subreddit: extractSubreddit(o.link ?? ""),
-      }))
-      .filter((r: SerperResult) => r.title && r.link.includes("reddit.com"));
+    return data?.organic ?? [];
   } catch (e) {
     console.error("Serper fetch failed:", e);
     return [];
@@ -47,7 +56,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { keyword, subreddit, numResults, includeAllContext } = await req.json();
+    const { keyword, subreddit, numResults } = await req.json();
     if (!keyword || typeof keyword !== "string") {
       return new Response(JSON.stringify({ error: "keyword required" }), {
         status: 400,
@@ -59,45 +68,77 @@ Deno.serve(async (req) => {
     if (!SERPER_API_KEY) throw new Error("SERPER_API_KEY not configured");
 
     const cleanSub = (subreddit ?? "").replace(/^r\//, "").trim();
-    const num = Math.max(5, Math.min(30, Number(numResults) || 10));
-    const includeAll = includeAllContext !== false; // default true
+    const k = keyword.trim();
 
-    const primaryQuery = cleanSub
-      ? `site:reddit.com/r/${cleanSub} ${keyword}`
-      : `site:reddit.com ${keyword} discussion`;
-
-    const painQuery = `site:reddit.com ${keyword} "I wish" OR "why doesn't" OR "I hate" OR "need an app"`;
-
-    const searches: Promise<SerperResult[]>[] = [
-      serperSearch(primaryQuery, SERPER_API_KEY, num),
+    // 5 broad pain/intent queries
+    const broadQueries = [
+      `site:reddit.com ${k} problem`,
+      `site:reddit.com ${k} "I wish" OR "need an app" OR "someone should build"`,
+      `site:reddit.com ${k} frustrating OR hate OR broken OR useless`,
+      `site:reddit.com ${k} alternative OR "looking for" OR "recommend"`,
+      `site:reddit.com ${k} "would pay" OR "worth it" OR "subscription"`,
     ];
-    if (includeAll) {
-      searches.push(serperSearch(painQuery, SERPER_API_KEY, Math.min(num, 10)));
+
+    // 5 subreddit-specific queries: prefer the user's subreddit if provided
+    const targetSubs = cleanSub
+      ? [cleanSub, "startups", "Entrepreneur", "SomebodyMakeThis", "productrequest"]
+      : ["startups", "Entrepreneur", "SomebodyMakeThis", "androidapps", "productrequest"];
+    const subQueries = targetSubs.map((s) => `site:reddit.com/r/${s} ${k}`);
+
+    const allQueries = [...broadQueries, ...subQueries];
+
+    // Run all 10 in parallel
+    const batches = await Promise.all(
+      allQueries.map((q) => serperSearch(q, SERPER_API_KEY)),
+    );
+
+    // Combine + dedupe by URL
+    const seen = new Set<string>();
+    const combined: SerperResult[] = [];
+    for (const batch of batches) {
+      for (const o of batch) {
+        const link = o?.link ?? "";
+        if (!link.includes("reddit.com") || seen.has(link)) continue;
+        seen.add(link);
+        const title = o?.title ?? "";
+        const snippet = o?.snippet ?? "";
+        if (!title) continue;
+        combined.push({
+          title,
+          snippet,
+          link,
+          subreddit: extractSubreddit(link),
+          score: scoreResult(title, snippet),
+        });
+      }
     }
 
-    const batches = await Promise.all(searches);
+    // Sort by score desc, take top 20 (or numResults if higher)
+    const cap = Math.max(20, Math.min(30, Number(numResults) || 20));
+    combined.sort((a, b) => b.score - a.score);
+    const results = combined.slice(0, cap);
 
-    const seen = new Set<string>();
-    const results = batches.flat().filter((r) => {
-      if (seen.has(r.link)) return false;
-      seen.add(r.link);
-      return true;
-    });
-
-    // Effective subreddits: top sources actually returned, ranked by frequency
+    // Effective subreddits: top sources by frequency (strip "r/" prefix for UI)
     const subCounts = new Map<string, number>();
     for (const r of results) {
-      if (!r.subreddit) continue;
-      subCounts.set(r.subreddit, (subCounts.get(r.subreddit) ?? 0) + 1);
+      const clean = r.subreddit.replace(/^r\//, "");
+      if (!clean || clean === "reddit") continue;
+      subCounts.set(clean, (subCounts.get(clean) ?? 0) + 1);
     }
     const effectiveSubreddits = [...subCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6)
       .map(([s]) => s);
 
-    return new Response(JSON.stringify({ results, effectiveSubreddits }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        results,
+        effectiveSubreddits,
+        totalFound: results.length,
+        lowData: results.length < 5,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     console.error("reddit-fetch error:", e);
     return new Response(
