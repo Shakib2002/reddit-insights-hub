@@ -23,6 +23,12 @@ export const HistoryDrawer = () => {
   }, [open]);
 
   const openItem = (item: HistoryItem) => {
+    if (item.kind === "validate") {
+      sessionStorage.setItem("redditlens_validate", JSON.stringify(item.payload));
+      setOpen(false);
+      navigate("/validate");
+      return;
+    }
     sessionStorage.setItem("redditlens_results", JSON.stringify(item.payload));
     setOpen(false);
     navigate("/results");
