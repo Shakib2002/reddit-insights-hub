@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { toFriendlyError } from "@/lib/errors";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck, Target, DollarSign, CheckCircle2, Zap, Users, BarChart3, ArrowRight, Heart } from "lucide-react";
