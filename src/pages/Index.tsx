@@ -80,15 +80,19 @@ async function runOneSearch(opts: {
   }
 
   return {
-    inputs: {
-      keyword: opts.keyword,
-      appIdea: opts.appIdea,
-      subreddit: opts.subreddit.replace(/^r\//, ""),
-      numResults: opts.numResults,
-      effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
-      language: opts.language,
-    },
-    analysis: analyzeData.analysis,
+    payload: {
+      inputs: {
+        keyword: opts.keyword,
+        appIdea: opts.appIdea,
+        subreddit: opts.subreddit.replace(/^r\//, ""),
+        numResults: opts.numResults,
+        effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
+        language: opts.language,
+      },
+      analysis: analyzeData.analysis,
+    } as ResultsPayload,
+    lowData: !!redditData?.lowData,
+    totalFound: Number(redditData?.totalFound ?? (redditData?.results?.length ?? 0)),
   };
 }
 
