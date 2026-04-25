@@ -88,6 +88,7 @@ async function runOneSearch(opts: {
         numResults: opts.numResults,
         effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
         language: opts.language,
+        rationale: redditData?.rationale,
       },
       analysis: analyzeData.analysis,
     } as ResultsPayload,

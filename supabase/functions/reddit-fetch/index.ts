@@ -10,6 +10,8 @@ interface SerperResult {
   link: string;
   subreddit: string;
   score: number;
+  matchedSignals?: string[];
+  queryHits?: number;
 }
 
 function extractSubreddit(link: string): string {
@@ -17,20 +19,31 @@ function extractSubreddit(link: string): string {
   return m ? `r/${m[1]}` : "r/reddit";
 }
 
-function scoreResult(title: string, snippet: string): number {
+// Tiered keyword sets — each scored in BOTH title and snippet (title weighted higher)
+const HIGH_SIGNALS = ["wish", "need", "want", "problem", "hate", "frustrated", "frustrating", "broken", "useless"];
+const MID_SIGNALS = ["would pay", "alternative", "looking for", "recommend", "worth it", "subscription"];
+const LOW_SIGNALS = ["anyone else", "why doesn't", "i hate", "someone should build", "need an app"];
+
+function scoreResult(title: string, snippet: string): { score: number; matched: string[] } {
   const t = (title || "").toLowerCase();
   const s = (snippet || "").toLowerCase();
   let score = 0;
+  const matched = new Set<string>();
 
-  const high = ["wish", "need", "want", "problem", "hate", "frustrated"];
-  const mid = ["would pay", "alternative", "looking for"];
-  const low = ["anyone else", "why doesn't", "i hate"];
+  for (const w of HIGH_SIGNALS) {
+    if (t.includes(w)) { score += 3; matched.add(w); }
+    if (s.includes(w)) { score += 2; matched.add(w); }
+  }
+  for (const w of MID_SIGNALS) {
+    if (t.includes(w)) { score += 2; matched.add(w); }
+    if (s.includes(w)) { score += 1; matched.add(w); }
+  }
+  for (const w of LOW_SIGNALS) {
+    if (t.includes(w)) { score += 2; matched.add(w); }
+    if (s.includes(w)) { score += 1; matched.add(w); }
+  }
 
-  for (const w of high) if (t.includes(w)) score += 3;
-  for (const w of mid) if (t.includes(w)) score += 2;
-  for (const w of low) if (s.includes(w)) score += 1;
-
-  return score;
+  return { score, matched: [...matched] };
 }
 
 async function serperSearch(query: string, apiKey: string): Promise<any[]> {
@@ -92,33 +105,46 @@ Deno.serve(async (req) => {
       allQueries.map((q) => serperSearch(q, SERPER_API_KEY)),
     );
 
-    // Combine + dedupe by URL
-    const seen = new Set<string>();
-    const combined: SerperResult[] = [];
+    // Combine + dedupe by URL, but track how many of the 10 queries each URL appeared in
+    const byLink = new Map<string, SerperResult>();
     for (const batch of batches) {
       for (const o of batch) {
         const link = o?.link ?? "";
-        if (!link.includes("reddit.com") || seen.has(link)) continue;
-        seen.add(link);
+        if (!link.includes("reddit.com")) continue;
         const title = o?.title ?? "";
         const snippet = o?.snippet ?? "";
         if (!title) continue;
-        combined.push({
+
+        const existing = byLink.get(link);
+        if (existing) {
+          existing.queryHits = (existing.queryHits ?? 1) + 1;
+          continue;
+        }
+        const { score, matched } = scoreResult(title, snippet);
+        byLink.set(link, {
           title,
           snippet,
           link,
           subreddit: extractSubreddit(link),
-          score: scoreResult(title, snippet),
+          score,
+          matchedSignals: matched,
+          queryHits: 1,
         });
       }
     }
 
-    // Sort by score desc, take top 20 (or numResults if higher)
+    // Cross-query boost: +2 per extra query that surfaced this URL
+    const combined: SerperResult[] = [...byLink.values()].map((r) => ({
+      ...r,
+      score: r.score + Math.max(0, (r.queryHits ?? 1) - 1) * 2,
+    }));
+
+    // Sort by score desc, take top N
     const cap = Math.max(20, Math.min(30, Number(numResults) || 20));
     combined.sort((a, b) => b.score - a.score);
     const results = combined.slice(0, cap);
 
-    // Effective subreddits: top sources by frequency (strip "r/" prefix for UI)
+    // Effective subreddits
     const subCounts = new Map<string, number>();
     for (const r of results) {
       const clean = r.subreddit.replace(/^r\//, "");
@@ -130,12 +156,55 @@ Deno.serve(async (req) => {
       .slice(0, 6)
       .map(([s]) => s);
 
+    // "Why these results" rationale: top signals + cross-query overlap stats
+    const signalCounts = new Map<string, number>();
+    for (const r of results) {
+      for (const sig of r.matchedSignals ?? []) {
+        signalCounts.set(sig, (signalCounts.get(sig) ?? 0) + 1);
+      }
+    }
+    const topSignals = [...signalCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([sig, n]) => ({ signal: sig, count: n }));
+
+    const multiQueryHits = results.filter((r) => (r.queryHits ?? 1) > 1).length;
+    const avgScore =
+      results.length > 0
+        ? Math.round((results.reduce((s, r) => s + r.score, 0) / results.length) * 10) / 10
+        : 0;
+
+    const rationaleParts: string[] = [];
+    rationaleParts.push(`Ran 10 parallel Reddit searches and ranked ${results.length} unique posts.`);
+    if (topSignals.length > 0) {
+      rationaleParts.push(
+        `Top intent signals: ${topSignals.map((t) => `“${t.signal}” ×${t.count}`).join(", ")}.`,
+      );
+    }
+    if (multiQueryHits > 0) {
+      rationaleParts.push(
+        `${multiQueryHits} post${multiQueryHits === 1 ? "" : "s"} surfaced in multiple queries (cross-query boost applied).`,
+      );
+    }
+    if (effectiveSubreddits.length > 0) {
+      rationaleParts.push(`Strongest sources: ${effectiveSubreddits.slice(0, 3).map((s) => `r/${s}`).join(", ")}.`);
+    }
+
+    const rationale = {
+      summary: rationaleParts.join(" "),
+      topSignals,
+      multiQueryHits,
+      avgScore,
+      totalQueries: 10,
+    };
+
     return new Response(
       JSON.stringify({
         results,
         effectiveSubreddits,
         totalFound: results.length,
         lowData: results.length < 5,
+        rationale,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
