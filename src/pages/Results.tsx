@@ -290,6 +290,7 @@ const Results = () => {
           redditPosts: redditData?.results ?? inputs.redditPosts ?? [],
           totalFound: Number(redditData?.totalFound ?? redditData?.results?.length ?? 0),
           serperOk: redditData?.serperOk !== false,
+        debug: redditData?.debug,
         },
         analysis: analyzeData.analysis,
       };
