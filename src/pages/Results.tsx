@@ -571,8 +571,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
 
         {/* 1. Hero stats bar */}
         <div
-          className="rounded-xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-5 gap-3 fade-in"
-          style={{ background: "hsl(16 100% 97%)" }}
+          className="rounded-2xl border border-border p-3 md:p-4 grid grid-cols-2 md:grid-cols-5 gap-3 fade-in bg-card shadow-card"
         >
           <StatCard label="Pain Score" value={`${score}/100`} />
           <StatCard
@@ -1052,7 +1051,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           </Button>
           <Button
             onClick={copyReport}
-            className="flex-1 min-w-[140px] bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="flex-1 min-w-[140px] gradient-orange text-white border-0 hover:-translate-y-0.5 hover:shadow-glow-strong transition-all"
           >
             <Copy className="h-4 w-4" /> Copy Report
           </Button>

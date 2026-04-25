@@ -95,7 +95,7 @@ const Validate = () => {
         </div>
 
         {/* Verdict card */}
-        <Card className="p-8 fade-in" style={{ background: "hsl(16 100% 97%)" }}>
+        <Card className="p-8 fade-in bg-card border-border">
           <div className="flex flex-col items-center text-center gap-3">
             <div className={`relative h-36 w-36 rounded-full ${v.bg} ${v.text} flex flex-col items-center justify-center shadow-lg`}>
               <span className="text-5xl font-bold leading-none tabular-nums">{animatedScore}</span>
