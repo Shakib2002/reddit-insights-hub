@@ -8,19 +8,39 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { History as HistoryIcon, Trash2 } from "lucide-react";
+import { History as HistoryIcon, Trash2, CloudOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getHistory, clearHistory } from "@/lib/history";
+import { dbDeleteSearch, dbListHistory } from "@/lib/db-history";
+import { useAuth } from "@/hooks/useAuth";
 import type { HistoryItem } from "@/lib/types";
 
 export const HistoryDrawer = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const fromDb = !!user;
 
   useEffect(() => {
-    if (open) setItems(getHistory());
-  }, [open]);
+    if (!open) return;
+    let cancelled = false;
+    if (fromDb && user) {
+      setLoading(true);
+      dbListHistory(user.id).then((rows) => {
+        if (!cancelled) {
+          setItems(rows);
+          setLoading(false);
+        }
+      });
+    } else {
+      setItems(getHistory());
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [open, fromDb, user]);
 
   const openItem = (item: HistoryItem) => {
     if (item.kind === "validate") {
@@ -34,26 +54,48 @@ export const HistoryDrawer = () => {
     navigate("/results");
   };
 
-  const onClear = () => {
-    clearHistory();
+  const onClear = async () => {
+    if (fromDb) {
+      // Delete each row owned by the user
+      await Promise.all(items.map((it) => dbDeleteSearch(it.id)));
+    } else {
+      clearHistory();
+    }
     setItems([]);
   };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button variant="outline" size="sm" className="gap-1.5" aria-label="Open search history">
           <HistoryIcon className="h-4 w-4" />
-          History
+          <span className="hidden sm:inline">History</span>
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col">
         <SheetHeader>
           <SheetTitle>Search history</SheetTitle>
+          {!fromDb && (
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5 pt-1">
+              <CloudOff className="h-3.5 w-3.5" /> Saved on this device only.{" "}
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/auth");
+                }}
+                className="text-primary hover:underline font-medium"
+              >
+                Sign in
+              </button>{" "}
+              to sync.
+            </p>
+          )}
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto py-4 space-y-2">
-          {items.length === 0 ? (
+          {loading ? (
+            <p className="text-sm text-muted-foreground text-center py-12">Loading…</p>
+          ) : items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-12">
               No saved searches yet.
             </p>
