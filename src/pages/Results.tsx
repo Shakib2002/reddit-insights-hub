@@ -104,17 +104,35 @@ const StatCard = ({
   label,
   value,
   sub,
+  badge,
 }: {
   label: string;
   value: string | number;
   sub?: string;
+  badge?: string;
 }) => (
   <div className="flex flex-col justify-center p-4 md:p-5 bg-background/70 backdrop-blur rounded-lg border border-border">
-    <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-      {label}
+    <div className="flex items-center justify-between gap-2">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+        {label}
+      </div>
+      {badge && (
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground"
+          title={sub}
+        >
+          {badge}
+        </span>
+      )}
     </div>
     <div className="text-2xl md:text-3xl font-bold tabular-nums mt-1 truncate">{value}</div>
-    {sub && <div className="text-xs text-muted-foreground mt-0.5 truncate">{sub}</div>}
+    {sub && (
+      <div
+        className={`text-xs mt-0.5 ${badge ? "text-destructive line-clamp-2" : "text-muted-foreground truncate"}`}
+      >
+        {sub}
+      </div>
+    )}
   </div>
 );
 
@@ -290,6 +308,7 @@ const Results = () => {
           redditPosts: redditData?.results ?? inputs.redditPosts ?? [],
           totalFound: Number(redditData?.totalFound ?? redditData?.results?.length ?? 0),
           serperOk: redditData?.serperOk !== false,
+        debug: redditData?.debug,
         },
         analysis: analyzeData.analysis,
       };
@@ -410,7 +429,22 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           style={{ background: "hsl(16 100% 97%)" }}
         >
           <StatCard label="Pain Score" value={`${score}/100`} />
-          <StatCard label="Posts Found" value={totalFound} />
+          <StatCard
+            label="Posts Found"
+            value={totalFound}
+            sub={
+              totalFound === 0 && inputs.debug?.apiKeySet === false
+                ? "⚠ API Key Issue? Check SERPER_API_KEY env var"
+                : totalFound === 0 && inputs.serperOk === false
+                ? "⚠ API Key Issue? Serper rejected the request"
+                : undefined
+            }
+            badge={
+              totalFound === 0 && (inputs.debug?.apiKeySet === false || inputs.serperOk === false)
+                ? "API Key Issue?"
+                : undefined
+            }
+          />
           <StatCard
             label="Avg Signal"
             value={avgSignalLabel(avgSig)}
