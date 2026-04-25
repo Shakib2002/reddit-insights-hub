@@ -944,8 +944,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 8. Competitor Gaps */}
-        <section id="gaps" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-4">Competitor Gaps</h2>
+        <section id="gaps" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold section-accent">Competitor Gaps</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {gaps.length} found
+            </span>
+          </div>
           {gaps.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -956,27 +961,32 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                   .map((t) => t.trim())
                   .filter(Boolean);
                 return (
-                  <Card
-                    key={i}
-                    className="p-4 md:p-5 border-l-[3px] h-full flex flex-col"
-                    style={{ borderLeftColor: "hsl(var(--primary))" }}
-                  >
-                    <h3 className="font-bold text-base mb-1.5 leading-tight">{g.gap}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">{g.description}</p>
+                  <Card key={i} className="gap-card p-5 h-full flex flex-col bg-card border-border">
+                    <h3 className="font-bold text-[15px] mb-1.5 leading-tight text-foreground">
+                      {g.gap}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+                      {g.description}
+                    </p>
                     {g.opportunity && (
-                      <p className="text-sm text-success font-medium mb-3 flex-1">
-                        <span className="font-semibold">Opportunity:</span> {g.opportunity}
+                      <p className="text-sm font-medium mb-3 flex-1 leading-relaxed">
+                        <span className="font-semibold" style={{ color: "#22C55E" }}>
+                          Opportunity:
+                        </span>{" "}
+                        <span className="text-foreground">{g.opportunity}</span>
                       </p>
                     )}
                     {!g.opportunity && <div className="flex-1" />}
                     {tools.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/50">
-                        <span className="text-xs text-muted-foreground self-center">Affects:</span>
+                      <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border/60">
+                        <span className="text-[11px] text-muted-foreground self-center">
+                          Affects:
+                        </span>
                         {tools.map((t, ti) => (
                           <Badge
                             key={ti}
                             variant="outline"
-                            className="text-xs font-normal bg-muted/50 text-muted-foreground"
+                            className="text-[11px] font-normal rounded-full bg-secondary text-muted-foreground"
                           >
                             {t}
                           </Badge>
@@ -1002,11 +1012,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         />
 
         {/* 9. Niche Opportunities — grid */}
-        <section id="niches" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-1">Niche Opportunities</h2>
-          <p className="text-sm text-muted-foreground mb-3">
-            Click any card to research that niche.
-          </p>
+        <section id="niches" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-semibold section-accent">Niche Opportunities</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Click any card to research that niche.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {analysis.niches.length} niches
+            </span>
+          </div>
           {analysis.niches.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -1016,19 +1033,26 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                   key={i}
                   type="button"
                   onClick={() => searchNiche(n)}
-                  className="text-left p-3 rounded-lg border border-border bg-card hover:bg-primary/5 hover:border-primary/40 transition-all"
+                  className="niche-card relative text-left p-4 pb-7 rounded-xl border border-border bg-card"
                   title={n.description}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="font-semibold text-sm leading-tight">{n.niche}</span>
-                    <span
-                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${sizePillClass(n.size)}`}
-                    >
-                      {n.size}
-                    </span>
+                  <span
+                    className={`absolute top-3 right-3 text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${sizePillClass(n.size)}`}
+                  >
+                    {n.size}
+                  </span>
+                  <div className="text-2xl mb-2" aria-hidden>
+                    {nicheEmoji(`${n.niche} ${n.description ?? ""}`)}
                   </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{n.description}</p>
-                  <p className="text-[11px] text-primary mt-2 font-medium">Click to research →</p>
+                  <div className="font-semibold text-[14px] leading-tight text-foreground mb-1.5 pr-14">
+                    {n.niche}
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                    {n.description}
+                  </p>
+                  <p className="niche-cta absolute bottom-2.5 left-4 text-[11px] text-primary font-medium">
+                    Click to research →
+                  </p>
                 </button>
               ))}
             </div>
@@ -1036,22 +1060,29 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         </section>
 
         {/* 10. Potential First Users */}
-        <section id="first-users" className="fade-in scroll-mt-32">
-          <h2 className="text-xl font-semibold mb-4">Potential First Users</h2>
+        <section id="first-users" className="reveal-up scroll-mt-32">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold section-accent">Potential First Users</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {analysis.firstUserPersonas.length} personas
+            </span>
+          </div>
           {analysis.firstUserPersonas.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
               {analysis.firstUserPersonas.map((p, i) => (
-                <Card key={i} className="p-4 md:p-5">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-semibold text-sm leading-tight">{p.persona}</h3>
-                  </div>
-                  <p className="text-xs text-muted-foreground line-clamp-3">{p.pain}</p>
+                <Card key={i} className="p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30">
+                  <h3 className="font-semibold text-[14px] leading-tight text-foreground mb-1.5">
+                    {p.persona}
+                  </h3>
+                  <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                    {p.pain}
+                  </p>
                   {p.willingToPay && (
                     <Badge
                       variant="outline"
-                      className={`text-xs mt-2 ${payVariant(p.willingToPay)}`}
+                      className={`text-xs mt-2.5 ${payVariant(p.willingToPay)}`}
                     >
                       Pays: {p.willingToPay}
                     </Badge>
@@ -1070,8 +1101,13 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         />
 
         {/* 11. Recommended Subreddits */}
-        <section className="fade-in no-print">
-          <h2 className="text-xl font-semibold mb-4">Recommended Subreddits</h2>
+        <section className="reveal-up no-print">
+          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+            <h2 className="text-xl font-semibold section-accent">Recommended Subreddits</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {analysis.recommendedSubreddits.length} subs
+            </span>
+          </div>
           {analysis.recommendedSubreddits.length === 0 ? (
             <EmptyPlaceholder text="Not enough Reddit data found for this section" />
           ) : (
@@ -1084,7 +1120,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                     href={`https://reddit.com/r/${clean}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground transition-colors border border-border"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:text-primary hover:border-primary/40 transition-colors border border-border"
                   >
                     r/{clean}
                     <ExternalLink className="h-3 w-3" />
@@ -1095,43 +1131,49 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           )}
         </section>
 
-        {/* (View Source Posts removed — Reddit Evidence section above already lists them) */}
-
         {/* 11b. Weekly Digest Signup (NEW) */}
         <WeeklyDigestSignup keyword={inputs.keyword} />
 
         {/* 12. Action Bar */}
-        <div className="flex flex-wrap gap-2 pt-4 fade-in no-print">
-          <Button onClick={() => navigate("/")} variant="outline" className="flex-1 min-w-[140px]">
+        <div className="flex flex-wrap justify-center gap-3 pt-6 reveal-up no-print">
+          <Button
+            onClick={() => navigate("/")}
+            variant="outline"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+          >
             <ArrowLeft className="h-4 w-4" /> Search Again
           </Button>
-          <Button onClick={shareReport} variant="outline" className="flex-1 min-w-[120px]">
+          <Button
+            onClick={shareReport}
+            variant="outline"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+          >
             <Share2 className="h-4 w-4" /> Share
           </Button>
           <Button
             onClick={() => window.print()}
             variant="outline"
-            className="flex-1 min-w-[140px]"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
           >
             <Printer className="h-4 w-4" /> Export PDF
           </Button>
           <Button
             onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.md`, reportToMarkdown(data), "text/markdown")}
             variant="outline"
-            className="flex-1 min-w-[140px]"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
           >
             <FileText className="h-4 w-4" /> Markdown
           </Button>
           <Button
             onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.csv`, reportToCsv(data), "text/csv")}
             variant="outline"
-            className="flex-1 min-w-[140px]"
+            className="h-11 px-5 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
           >
             <FileSpreadsheet className="h-4 w-4" /> CSV
           </Button>
           <Button
             onClick={copyReport}
-            className="flex-1 min-w-[140px] gradient-orange text-white border-0 hover:-translate-y-0.5 hover:shadow-glow-strong transition-all"
+            className="h-11 px-7 btn-copy-orange font-semibold"
           >
             <Copy className="h-4 w-4" /> Copy Report
           </Button>
