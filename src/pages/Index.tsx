@@ -9,9 +9,9 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Search, ChevronDown, GitCompare, X } from "lucide-react";
+import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
-import { saveToHistory } from "@/lib/history";
+import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 
 const EXAMPLES = [
   "mental health apps",
@@ -38,6 +38,14 @@ const LOADING_STAGES = [
   { label: "Running 10 Reddit searches…", until: 55 },
   { label: "Analyzing results…", until: 85 },
   { label: "Building report…", until: 100 },
+];
+
+const VALIDATE_LOADING_STAGES = [
+  { label: "Searching Reddit for evidence…", until: 35 },
+  { label: "Collecting discussions…", until: 55 },
+  { label: "Running idea validation…", until: 75 },
+  { label: "Scoring 6 dimensions…", until: 90 },
+  { label: "Building your validation report…", until: 100 },
 ];
 
 async function runOneSearch(opts: {
@@ -97,12 +105,69 @@ async function runOneSearch(opts: {
   };
 }
 
+async function runValidate(opts: {
+  keyword: string;
+  appIdea: string;
+  subreddit: string;
+  numResults: number;
+  language: "en" | "bn" | "both";
+}): Promise<{ payload: import("@/lib/types").ValidatePayload; lowData: boolean; totalFound: number }> {
+  const { data: redditData, error: redditErr } = await supabase.functions.invoke(
+    "reddit-fetch",
+    {
+      body: {
+        keyword: opts.keyword,
+        subreddit: opts.subreddit,
+        numResults: opts.numResults,
+      },
+    },
+  );
+  if (redditErr) throw redditErr;
+
+  const { data: validateData, error: validateErr } = await supabase.functions.invoke(
+    "validate",
+    {
+      body: {
+        keyword: opts.keyword,
+        appIdea: opts.appIdea,
+        results: redditData?.results ?? [],
+        language: opts.language,
+      },
+    },
+  );
+  if (validateErr) {
+    const msg = (validateErr as any).context?.body
+      ? JSON.parse((validateErr as any).context.body).error
+      : validateErr.message;
+    throw new Error(msg);
+  }
+
+  return {
+    payload: {
+      mode: "validate",
+      inputs: {
+        keyword: opts.keyword,
+        appIdea: opts.appIdea,
+        subreddit: opts.subreddit.replace(/^r\//, ""),
+        numResults: opts.numResults,
+        effectiveSubreddits: redditData?.effectiveSubreddits ?? [],
+        language: opts.language,
+        rationale: redditData?.rationale,
+      },
+      validation: validateData.validation,
+    },
+    lowData: !!redditData?.lowData,
+    totalFound: Number(redditData?.totalFound ?? (redditData?.results?.length ?? 0)),
+  };
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [keyword, setKeyword] = useState("");
   const [keyword2, setKeyword2] = useState("");
   const [compareMode, setCompareMode] = useState(false);
+  const [validateMode, setValidateMode] = useState(false);
   const [appIdea, setAppIdea] = useState("");
   const [subreddit, setSubreddit] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -113,40 +178,57 @@ const Index = () => {
   const [progress, setProgress] = useState(0);
   const [stageIdx, setStageIdx] = useState(0);
 
-  // Pre-fill from /results "search this niche" via sessionStorage
+  // Pre-fill from /results "search this niche" + ?mode=validate URL hint
   useEffect(() => {
     const prefill = sessionStorage.getItem("redditlens_prefill");
     if (prefill) {
       setKeyword(prefill);
       sessionStorage.removeItem("redditlens_prefill");
     }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "validate") {
+      setValidateMode(true);
+      setCompareMode(false);
+    }
   }, []);
+
+  const activeStages = validateMode ? VALIDATE_LOADING_STAGES : LOADING_STAGES;
 
   // Animate progress while loading + auto-advance stage label
   useEffect(() => {
     if (!loading) return;
     const id = setInterval(() => {
       setProgress((p) => {
-        const ceiling = LOADING_STAGES[stageIdx]?.until ?? 95;
+        const ceiling = activeStages[stageIdx]?.until ?? 95;
         if (p >= ceiling) return p;
         const delta = Math.max(0.4, (ceiling - p) * 0.06);
         return Math.min(ceiling, p + delta);
       });
     }, 200);
     return () => clearInterval(id);
-  }, [loading, stageIdx]);
+  }, [loading, stageIdx, activeStages]);
 
-  // Auto-advance label: searches → analyzing after ~3.5s
+  // Auto-advance label every ~2.5s while loading
   useEffect(() => {
     if (!loading) return;
-    const t = setTimeout(() => setStageIdx((i) => Math.max(i, 1)), 3500);
-    return () => clearTimeout(t);
-  }, [loading]);
+    const t = setInterval(() => {
+      setStageIdx((i) => Math.min(i + 1, activeStages.length - 2));
+    }, 2500);
+    return () => clearInterval(t);
+  }, [loading, activeStages.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyword.trim()) {
       toast({ title: "Keyword is required", variant: "destructive" });
+      return;
+    }
+    if (validateMode && !appIdea.trim()) {
+      toast({
+        title: "Describe your app idea",
+        description: "Idea validation needs an idea to score against.",
+        variant: "destructive",
+      });
       return;
     }
     if (compareMode && !keyword2.trim()) {
@@ -159,14 +241,31 @@ const Index = () => {
     setStageIdx(0);
 
     try {
-      if (compareMode) {
+      if (validateMode) {
+        const result = await runValidate({
+          keyword,
+          appIdea,
+          subreddit,
+          numResults,
+          language,
+        });
+        setStageIdx(VALIDATE_LOADING_STAGES.length - 1);
+        if (result.lowData) {
+          toast({
+            title: "Limited Reddit data found",
+            description: `Only ${result.totalFound} relevant Reddit results — validation may be less accurate.`,
+          });
+        }
+        sessionStorage.setItem("redditlens_validate", JSON.stringify(result.payload));
+        saveValidationToHistory(result.payload);
+        setProgress(100);
+        navigate("/validate?mode=validate");
+      } else if (compareMode) {
         const [left, right] = await Promise.all([
           runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language }),
           runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language }),
         ]);
-        setStageIdx(1);
-        // Searches done by the time the promise resolves; analyze is part of runOneSearch
-        setStageIdx(2);
+        setStageIdx(LOADING_STAGES.length - 1);
         if (left.lowData || right.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -192,7 +291,7 @@ const Index = () => {
           includeAllContext,
           language,
         });
-        setStageIdx(2);
+        setStageIdx(LOADING_STAGES.length - 1);
         if (result.lowData) {
           toast({
             title: "Limited Reddit data found",
@@ -207,7 +306,7 @@ const Index = () => {
     } catch (e) {
       console.error(e);
       toast({
-        title: "Analysis failed",
+        title: validateMode ? "Validation failed" : "Analysis failed",
         description: e instanceof Error ? e.message : "Please try again.",
         variant: "destructive",
       });
@@ -244,27 +343,55 @@ const Index = () => {
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mt-2 tabular-nums">
                   <span>{Math.round(progress)}%</span>
-                  <span>10 parallel searches</span>
+                  <span>{validateMode ? "Idea validation" : "10 parallel searches"}</span>
                 </div>
               </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Mode toggle */}
+              <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => { setValidateMode(false); }}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center justify-center gap-1.5 ${
+                    !validateMode
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Search className="h-4 w-4" /> Search Mode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setValidateMode(true); setCompareMode(false); }}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center justify-center gap-1.5 ${
+                    validateMode
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <ShieldCheck className="h-4 w-4" /> Validate My Idea
+                </button>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="keyword">
-                    {compareMode ? "Keyword A" : "Keyword or topic"}
+                    {compareMode ? "Keyword A" : validateMode ? "Topic to research on Reddit" : "Keyword or topic"}
                   </Label>
-                  <Button
-                    type="button"
-                    variant={compareMode ? "default" : "outline"}
-                    size="sm"
-                    className={`h-7 gap-1 text-xs ${compareMode ? "bg-primary hover:bg-primary/90" : ""}`}
-                    onClick={() => setCompareMode((v) => !v)}
-                  >
-                    <GitCompare className="h-3.5 w-3.5" />
-                    Compare
-                  </Button>
+                  {!validateMode && (
+                    <Button
+                      type="button"
+                      variant={compareMode ? "default" : "outline"}
+                      size="sm"
+                      className={`h-7 gap-1 text-xs ${compareMode ? "bg-primary hover:bg-primary/90" : ""}`}
+                      onClick={() => setCompareMode((v) => !v)}
+                    >
+                      <GitCompare className="h-3.5 w-3.5" />
+                      Compare
+                    </Button>
+                  )}
                 </div>
                 <Input
                   id="keyword"
@@ -299,14 +426,19 @@ const Index = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="idea">
-                  Your app idea <span className="text-muted-foreground font-normal">(optional)</span>
+                  {validateMode ? (
+                    <>Your app idea <span className="text-primary font-normal">*</span></>
+                  ) : (
+                    <>Your app idea <span className="text-muted-foreground font-normal">(optional)</span></>
+                  )}
                 </Label>
                 <Input
                   id="idea"
-                  placeholder="e.g. a bilingual AI mental coach for Bangladesh"
+                  placeholder={validateMode ? "Describe your app idea… e.g. A bilingual AI mental coach for Bangladesh" : "e.g. a bilingual AI mental coach for Bangladesh"}
                   value={appIdea}
                   onChange={(e) => setAppIdea(e.target.value)}
                   maxLength={300}
+                  required={validateMode}
                 />
               </div>
               <div className="space-y-2">
@@ -418,13 +550,22 @@ const Index = () => {
                 </div>
               </div>
 
+              {validateMode && compareMode && (
+                <p className="text-xs text-muted-foreground text-center -mt-2">
+                  Switch to single search to validate your idea.
+                </p>
+              )}
               <Button
                 type="submit"
                 size="lg"
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base h-12"
               >
-                <Search className="h-5 w-5" />
-                {compareMode ? "Compare both" : "Analyze Reddit"}
+                {validateMode ? <ShieldCheck className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+                {validateMode
+                  ? "Validate Idea →"
+                  : compareMode
+                    ? "Compare both"
+                    : "Analyze Reddit"}
               </Button>
             </form>
           )}

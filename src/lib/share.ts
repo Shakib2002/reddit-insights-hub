@@ -1,13 +1,13 @@
-import type { ResultsPayload, ComparePayload } from "./types";
+import type { ResultsPayload, ComparePayload, ValidatePayload } from "./types";
 
 // Encode payload as URL-safe base64 (handles unicode for Bangla)
-export function encodeShare(data: ResultsPayload | ComparePayload): string {
+export function encodeShare(data: ResultsPayload | ComparePayload | ValidatePayload): string {
   const json = JSON.stringify(data);
   const b64 = btoa(unescape(encodeURIComponent(json)));
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export function decodeShare<T = ResultsPayload | ComparePayload>(s: string): T | null {
+export function decodeShare<T = ResultsPayload | ComparePayload | ValidatePayload>(s: string): T | null {
   try {
     let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
     while (b64.length % 4) b64 += "=";
