@@ -36,6 +36,42 @@ const SUBREDDIT_SUGGESTIONS = [
   "iOSProgramming",
   "webdev",
   "indiehackers",
+  "productivity",
+  "Notion",
+  "ObsidianMD",
+  "ArtificialIntelligence",
+  "ChatGPT",
+  "MachineLearning",
+  "marketing",
+  "freelance",
+  "nocode",
+  "ecommerce",
+  "Shopify",
+  "fitness",
+  "loseit",
+  "personalfinance",
+  "investing",
+  "cryptocurrency",
+  "reactjs",
+  "javascript",
+  "Python",
+  "learnprogramming",
+  "DigitalNomad",
+  "remotework",
+  "selfimprovement",
+  "getdisciplined",
+  "Anxiety",
+  "depression",
+  "mentalhealth",
+  "parenting",
+  "teachers",
+  "students",
+  "college",
+  "gamedev",
+  "Unity3D",
+  "Design",
+  "UXDesign",
+  "graphic_design",
 ];
 
 type StepKey =
@@ -226,6 +262,8 @@ const Index = () => {
   const [validateMode, setValidateMode] = useState(false);
   const [appIdea, setAppIdea] = useState("");
   const [subreddit, setSubreddit] = useState("");
+  const [subOpen, setSubOpen] = useState(false);
+  const [subActiveIdx, setSubActiveIdx] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [numResults, setNumResults] = useState(10);
   const [includeAllContext, setIncludeAllContext] = useState(true);
@@ -562,20 +600,85 @@ const Index = () => {
                 <Label htmlFor="subreddit">
                   Subreddit <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
-                <Input
-                  id="subreddit"
-                  placeholder="e.g. startups, androidapps, entrepreneur"
-                  value={subreddit}
-                  onChange={(e) => setSubreddit(e.target.value)}
-                  maxLength={50}
-                />
+                {(() => {
+                  const query = subreddit.replace(/^r\//i, "").trim().toLowerCase();
+                  const matches = query
+                    ? SUBREDDIT_SUGGESTIONS.filter((s) => s.toLowerCase().includes(query)).slice(0, 6)
+                    : [];
+                  const pickSubreddit = (name: string) => {
+                    setSubreddit(name);
+                    setSubOpen(false);
+                    setSubActiveIdx(0);
+                  };
+                  return (
+                    <div className="relative">
+                      <Input
+                        id="subreddit"
+                        placeholder="e.g. startups, androidapps, entrepreneur"
+                        value={subreddit}
+                        onChange={(e) => {
+                          setSubreddit(e.target.value);
+                          setSubOpen(true);
+                          setSubActiveIdx(0);
+                        }}
+                        onFocus={() => setSubOpen(true)}
+                        onBlur={() => window.setTimeout(() => setSubOpen(false), 150)}
+                        onKeyDown={(e) => {
+                          if (!subOpen || matches.length === 0) return;
+                          if (e.key === "ArrowDown") {
+                            e.preventDefault();
+                            setSubActiveIdx((i) => (i + 1) % matches.length);
+                          } else if (e.key === "ArrowUp") {
+                            e.preventDefault();
+                            setSubActiveIdx((i) => (i - 1 + matches.length) % matches.length);
+                          } else if (e.key === "Enter") {
+                            e.preventDefault();
+                            pickSubreddit(matches[subActiveIdx]);
+                          } else if (e.key === "Escape") {
+                            setSubOpen(false);
+                          }
+                        }}
+                        autoComplete="off"
+                        maxLength={50}
+                      />
+                      {subOpen && matches.length > 0 && (
+                        <div
+                          role="listbox"
+                          className="absolute z-20 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-border bg-popover shadow-lg"
+                        >
+                          {matches.map((s, i) => (
+                            <button
+                              key={s}
+                              type="button"
+                              role="option"
+                              aria-selected={i === subActiveIdx}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                pickSubreddit(s);
+                              }}
+                              onMouseEnter={() => setSubActiveIdx(i)}
+                              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                i === subActiveIdx
+                                  ? "bg-accent text-accent-foreground"
+                                  : "hover:bg-muted"
+                              }`}
+                            >
+                              <span className="text-muted-foreground">r/</span>
+                              <span className="font-medium">{s}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {!subreddit.trim() && (
                   <div className="pt-1">
                     <p className="text-xs text-muted-foreground mb-2">
                       Popular subreddits — click to use one:
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {SUBREDDIT_SUGGESTIONS.map((s) => (
+                      {SUBREDDIT_SUGGESTIONS.slice(0, 9).map((s) => (
                         <button
                           key={s}
                           type="button"
