@@ -251,30 +251,8 @@ const Index = () => {
     }
   }, []);
 
-  const activeStages = validateMode ? VALIDATE_LOADING_STAGES : LOADING_STAGES;
-
-  // Animate progress while loading + auto-advance stage label
-  useEffect(() => {
-    if (!loading) return;
-    const id = setInterval(() => {
-      setProgress((p) => {
-        const ceiling = activeStages[stageIdx]?.until ?? 95;
-        if (p >= ceiling) return p;
-        const delta = Math.max(0.4, (ceiling - p) * 0.06);
-        return Math.min(ceiling, p + delta);
-      });
-    }, 200);
-    return () => clearInterval(id);
-  }, [loading, stageIdx, activeStages]);
-
-  // Auto-advance label every ~2.5s while loading
-  useEffect(() => {
-    if (!loading) return;
-    const t = setInterval(() => {
-      setStageIdx((i) => Math.min(i + 1, activeStages.length - 2));
-    }, 2500);
-    return () => clearInterval(t);
-  }, [loading, activeStages.length]);
+  const stepDefs = validateMode ? VALIDATE_STEPS : SEARCH_STEPS;
+  const steps = buildSteps(stepDefs, activeStep, stepDetails);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
