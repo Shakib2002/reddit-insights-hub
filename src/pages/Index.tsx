@@ -40,6 +40,14 @@ const LOADING_STAGES = [
   { label: "Building report…", until: 100 },
 ];
 
+const VALIDATE_LOADING_STAGES = [
+  { label: "Searching Reddit for evidence…", until: 35 },
+  { label: "Collecting discussions…", until: 55 },
+  { label: "Running idea validation…", until: 75 },
+  { label: "Scoring 6 dimensions…", until: 90 },
+  { label: "Building your validation report…", until: 100 },
+];
+
 async function runOneSearch(opts: {
   keyword: string;
   appIdea: string;
