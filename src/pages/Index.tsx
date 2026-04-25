@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Search, ChevronDown, GitCompare, X } from "lucide-react";
+import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 
