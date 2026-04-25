@@ -106,7 +106,11 @@ const Bar = ({ label, pct, color }: { label: string; pct: number; color: string 
 );
 
 const SentimentBars = ({ s }: { s: ResultsPayload["analysis"]["sentiment"] }) => (
-  <div className="space-y-2">
+  <div
+    className="space-y-2"
+    role="img"
+    aria-label={`Reddit sentiment: ${s.positive}% positive, ${s.neutral}% neutral, ${s.negative}% negative`}
+  >
     <Bar label="Positive" pct={s.positive} color="hsl(var(--success))" />
     <Bar label="Neutral" pct={s.neutral} color="hsl(var(--muted-foreground))" />
     <Bar label="Negative" pct={s.negative} color="hsl(var(--destructive))" />
