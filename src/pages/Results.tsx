@@ -37,6 +37,12 @@ import { downloadFile, reportToCsv, reportToMarkdown, safeFilename } from "@/lib
 import { BlueprintDialog } from "@/components/BlueprintDialog";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 import { SectionNav } from "@/components/SectionNav";
+import { BuildOrSkipVerdict } from "@/components/results/BuildOrSkipVerdict";
+import { TrendStatCard } from "@/components/results/TrendStatCard";
+import { RevenueModelsSection } from "@/components/results/RevenueModelsSection";
+import { CompetitorIntelSection } from "@/components/results/CompetitorIntelSection";
+import { FounderFitSection } from "@/components/results/FounderFitSection";
+import { WeeklyDigestSignup } from "@/components/results/WeeklyDigestSignup";
 
 type RerunStepKey = "fetch" | "score" | "ai" | "render";
 const RERUN_STEPS: { key: RerunStepKey; label: string }[] = [
