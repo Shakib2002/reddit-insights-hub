@@ -182,9 +182,9 @@ const StatCard = ({
   valueTitle?: string;
   glow?: "orange" | "green" | "red";
 }) => (
-  <div className="flex flex-col justify-center px-6 py-5 md:px-8 bg-card rounded-xl border border-border min-w-[140px]">
+  <div className="flex flex-col justify-center px-3 md:px-4 py-2 min-w-0 border-b md:border-b-0 md:border-r border-border last:border-b-0 md:last:border-r-0 pb-4 md:pb-2">
     <div className="flex items-center justify-between gap-2">
-      <div className="text-[11px] uppercase tracking-[2px] text-[#555566] font-semibold">
+      <div className="text-[10px] uppercase tracking-[1.5px] text-[#555566] font-semibold whitespace-nowrap">
         {label}
       </div>
       {badge && (
@@ -202,7 +202,7 @@ const StatCard = ({
       )}
     </div>
     <div
-      className={`mt-2 truncate font-bold tabular-nums leading-none ${
+      className={`mt-2 font-bold tabular-nums leading-none whitespace-nowrap overflow-hidden text-ellipsis ${
         glow === "orange"
           ? "stat-glow-orange"
           : glow === "green"
@@ -210,14 +210,14 @@ const StatCard = ({
             : glow === "red"
               ? "stat-glow-red"
               : "text-foreground"
-      } ${valueClassName ?? "text-[24px] md:text-[32px]"}`}
+      } ${valueClassName ?? "text-[20px] md:text-[22px]"}`}
       title={valueTitle ?? (typeof value === "string" ? value : undefined)}
     >
       {value}
     </div>
     {sub && (
       <div
-        className={`text-xs mt-1.5 ${badge ? "text-destructive line-clamp-2" : "text-muted-foreground truncate"}`}
+        className={`text-[11px] mt-1.5 ${badge ? "text-destructive line-clamp-2" : "text-muted-foreground truncate"}`}
       >
         {sub}
       </div>
@@ -618,7 +618,7 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
 
         {/* 1. Hero stats bar */}
         <div
-          className="rounded-2xl border border-border px-6 py-6 md:px-8 grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 reveal-up bg-card shadow-card"
+          className="rounded-2xl border border-border px-4 py-4 md:px-6 md:py-5 grid grid-cols-2 md:grid-cols-5 gap-x-0 gap-y-0 reveal-up bg-card shadow-card"
         >
           <StatCard label="Pain Score" value={`${score}/100`} glow="orange" />
           <StatCard
@@ -626,10 +626,10 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             value={redditCount > 0 ? `${redditCount} Reddit` : totalFound > 0 ? "AI insights" : "0 posts"}
             valueClassName={
               redditCount > 0
-                ? "text-[20px] md:text-[24px] font-bold text-green-500"
+                ? "text-[18px] md:text-[20px] font-bold text-green-500"
                 : totalFound > 0
-                  ? "text-[20px] md:text-[24px] font-bold text-yellow-500"
-                  : "text-[20px] md:text-[24px] font-bold text-red-500"
+                  ? "text-[18px] md:text-[20px] font-bold text-yellow-500"
+                  : "text-[18px] md:text-[20px] font-bold text-red-500"
             }
             sub={
               totalFound === 0 && inputs.debug?.apiKeySet === false
