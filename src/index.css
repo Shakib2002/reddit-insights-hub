@@ -2,92 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Premium dark-only SaaS palette — RedditLens
+   All colors here mirror the design spec hex values. */
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 220 13% 13%;
+  :root,
+  .dark {
+    /* Surfaces */
+    --background: 240 6% 4%;        /* #0A0A0B */
+    --foreground: 240 11% 96%;      /* #F5F5F7 */
+    --card: 240 5% 7%;              /* #111113 */
+    --card-foreground: 240 11% 96%;
+    --popover: 240 5% 7%;
+    --popover-foreground: 240 11% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 13% 13%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 13%;
-
-    /* Reddit orange #FF4500 */
+    /* Brand: Reddit orange #FF4500 */
     --primary: 16 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 13% 13%;
+    --secondary: 240 9% 11%;        /* #1A1A1F */
+    --secondary-foreground: 240 11% 96%;
+    --muted: 240 9% 11%;            /* #1A1A1F */
+    --muted-foreground: 240 9% 59%; /* #8E8EA0 */
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --accent: 16 100% 12%;
+    --accent-foreground: 16 100% 70%;
 
-    --accent: 16 100% 96%;
-    --accent-foreground: 16 100% 35%;
-
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 60%;       /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
-
-    --success: 142 71% 45%;
+    --success: 142 71% 45%;         /* #22C55E */
     --success-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 240 11% 18%;          /* #2A2A32 */
+    --input: 240 11% 18%;
     --ring: 16 100% 50%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 220 13% 8%;
-    --foreground: 0 0% 98%;
-
-    --card: 220 13% 11%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 220 13% 11%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 16 100% 55%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 13% 16%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 220 13% 16%;
-    --muted-foreground: 220 9% 65%;
-
-    --accent: 16 60% 20%;
-    --accent-foreground: 16 100% 75%;
-
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142 65% 50%;
-    --success-foreground: 0 0% 100%;
-
-    --border: 220 13% 20%;
-    --input: 220 13% 20%;
-    --ring: 16 100% 55%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* Sidebar (kept for shadcn parity) */
+    --sidebar-background: 240 6% 4%;
+    --sidebar-foreground: 240 11% 96%;
+    --sidebar-primary: 16 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 240 9% 11%;
+    --sidebar-accent-foreground: 240 11% 96%;
+    --sidebar-border: 240 11% 18%;
+    --sidebar-ring: 16 100% 50%;
   }
 }
 
@@ -95,10 +54,43 @@
   * {
     @apply border-border;
   }
-
+  html {
+    color-scheme: dark;
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background: rgba(255, 69, 0, 0.3);
+    color: #fff;
+  }
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #15151a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a32;
+    border-radius: 8px;
+    border: 2px solid #15151a;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ff4500;
+  }
+  * {
+    scrollbar-color: #2a2a32 #15151a;
+    scrollbar-width: thin;
+  }
+  /* Better focus rings */
+  :focus-visible {
+    outline: none;
   }
 }
 
@@ -108,13 +100,76 @@
   }
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .glow-primary {
+    box-shadow: 0 0 40px rgba(255, 69, 0, 0.18);
+  }
+  .shadow-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  .shadow-card-lg {
+    box-shadow: 0 0 0 1px #2a2a32, 0 24px 48px rgba(0, 0, 0, 0.5);
+  }
+  .gradient-orange {
+    background: linear-gradient(135deg, #ff4500 0%, #ff6b35 100%);
+  }
+  .gradient-text-orange {
+    background: linear-gradient(135deg, #ff4500 0%, #ff8a5b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .gradient-verdict-build {
+    background: linear-gradient(135deg, #0d2818 0%, #0f2e1a 100%);
+  }
+  .gradient-verdict-needs {
+    background: linear-gradient(135deg, #2a2000 0%, #2e2400 100%);
+  }
+  .gradient-verdict-skip {
+    background: linear-gradient(135deg, #2a0d0d 0%, #2e1010 100%);
+  }
+  .live-dot {
+    position: relative;
+    display: inline-flex;
+    height: 8px;
+    width: 8px;
+  }
+  .live-dot::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: #ef4444;
+    opacity: 0.75;
+    animation: livePing 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  .live-dot::after {
+    content: "";
+    position: relative;
+    display: inline-block;
+    height: 8px;
+    width: 8px;
+    border-radius: 9999px;
+    background: #ef4444;
+  }
+  @keyframes livePing {
+    75%, 100% { transform: scale(2.4); opacity: 0; }
+  }
+  .pulse-glow {
+    animation: pulseGlow 2.4s ease-in-out infinite;
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0.45); }
+    50%      { box-shadow: 0 0 0 12px rgba(255, 69, 0, 0); }
+  }
 }
 
-/* Print styles for Export PDF */
+/* Print styles */
 @media print {
   .no-print,
   header,
@@ -136,7 +191,6 @@
     color: black !important;
     text-decoration: none !important;
   }
-  /* page breaks */
   section, .print-card {
     break-inside: avoid;
     page-break-inside: avoid;
