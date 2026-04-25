@@ -76,7 +76,12 @@ const Results = () => {
       }
 
       const updated: ResultsPayload = {
-        inputs: { ...inputs, numResults: nextCount },
+        inputs: {
+          ...inputs,
+          numResults: nextCount,
+          effectiveSubreddits:
+            redditData?.effectiveSubreddits ?? inputs.effectiveSubreddits ?? [],
+        },
         analysis: analyzeData.analysis,
       };
       sessionStorage.setItem("redditlens_results", JSON.stringify(updated));
