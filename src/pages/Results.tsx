@@ -349,6 +349,9 @@ const Results = () => {
   );
 
   const totalFound = data?.inputs.totalFound ?? redditPosts.length;
+  const redditCount =
+    data?.inputs.debug?.redditCount ??
+    redditPosts.filter((p) => (p.link || "").includes("reddit.com")).length;
   const noPosts = totalFound === 0 || data?.inputs.serperOk === false;
 
   const [opportunities, gaps] = useMemo(() => {
