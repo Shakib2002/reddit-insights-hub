@@ -129,6 +129,40 @@ const EmptyPlaceholder = ({ text }: { text: string }) => (
   </Card>
 );
 
+// Map a niche/topic string to a relevant emoji.
+const nicheEmoji = (s: string): string => {
+  const t = s.toLowerCase();
+  const map: [RegExp, string][] = [
+    [/mobile|ios|android|app/, "📱"],
+    [/ai|machine|gpt|llm|model/, "🤖"],
+    [/health|wellness|therapy|mental|medical|doctor/, "🩺"],
+    [/fitness|workout|exercise|gym/, "💪"],
+    [/food|recipe|meal|cook|restaurant/, "🍽️"],
+    [/finance|money|budget|invest|crypto|bank/, "💰"],
+    [/edu|learn|study|course|school|student/, "🎓"],
+    [/game|gaming|play/, "🎮"],
+    [/music|audio|sound|podcast/, "🎧"],
+    [/travel|trip|hotel|flight/, "✈️"],
+    [/shop|ecommerce|store|retail|market/, "🛒"],
+    [/parent|kid|child|baby|family/, "👶"],
+    [/pet|dog|cat|animal/, "🐾"],
+    [/home|house|real estate|rent/, "🏠"],
+    [/car|auto|vehicle|drive/, "🚗"],
+    [/work|job|career|hr|hiring/, "💼"],
+    [/social|community|chat|message/, "💬"],
+    [/photo|video|camera|design/, "🎨"],
+    [/security|privacy|crypto|password/, "🔒"],
+    [/target|niche|market|focus/, "🎯"],
+    [/news|media|content|blog/, "📰"],
+    [/data|analytics|metric|dashboard/, "📊"],
+    [/calendar|schedule|time|productivity/, "⏰"],
+    [/email|mail|inbox/, "✉️"],
+    [/eco|green|climate|sustain/, "🌱"],
+  ];
+  for (const [re, e] of map) if (re.test(t)) return e;
+  return "🔍";
+};
+
 const StatCard = ({
   label,
   value,
@@ -137,6 +171,7 @@ const StatCard = ({
   successBadge,
   valueClassName,
   valueTitle,
+  glow,
 }: {
   label: string;
   value: string | number;
@@ -145,10 +180,11 @@ const StatCard = ({
   successBadge?: string;
   valueClassName?: string;
   valueTitle?: string;
+  glow?: "orange" | "green" | "red";
 }) => (
-  <div className="flex flex-col justify-center p-4 md:p-5 bg-background/70 backdrop-blur rounded-lg border border-border">
+  <div className="flex flex-col justify-center px-6 py-5 md:px-8 bg-card rounded-xl border border-border min-w-[140px]">
     <div className="flex items-center justify-between gap-2">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+      <div className="text-[11px] uppercase tracking-[2px] text-[#555566] font-semibold">
         {label}
       </div>
       {badge && (
@@ -166,14 +202,22 @@ const StatCard = ({
       )}
     </div>
     <div
-      className={`mt-1 truncate font-bold tabular-nums ${valueClassName ?? "text-2xl md:text-3xl"}`}
+      className={`mt-2 truncate font-bold tabular-nums leading-none ${
+        glow === "orange"
+          ? "stat-glow-orange"
+          : glow === "green"
+            ? "stat-glow-green"
+            : glow === "red"
+              ? "stat-glow-red"
+              : "text-foreground"
+      } ${valueClassName ?? "text-[24px] md:text-[32px]"}`}
       title={valueTitle ?? (typeof value === "string" ? value : undefined)}
     >
       {value}
     </div>
     {sub && (
       <div
-        className={`text-xs mt-0.5 ${badge ? "text-destructive line-clamp-2" : "text-muted-foreground truncate"}`}
+        className={`text-xs mt-1.5 ${badge ? "text-destructive line-clamp-2" : "text-muted-foreground truncate"}`}
       >
         {sub}
       </div>
