@@ -143,7 +143,11 @@ async function runOneSearch(opts: {
       },
     },
   );
-  if (redditErr) throw redditErr;
+  if (redditErr) {
+    const err = new Error((redditErr as any).message ?? "Reddit fetch failed");
+    (err as any)._stage = "reddit";
+    throw err;
+  }
 
   const fetched = redditData?.results?.length ?? 0;
   opts.onStep?.("score", `Merged & ranked ${fetched} unique posts`);
