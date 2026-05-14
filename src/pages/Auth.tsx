@@ -11,6 +11,29 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
+// Map OAuth/network error codes & messages to friendly, non-technical text.
+function friendlyOAuthError(code: string, description: string): string {
+  const c = (code || "").toLowerCase();
+  const d = (description || "").toLowerCase();
+
+  if (c === "access_denied" || d.includes("denied") || d.includes("cancel"))
+    return "You cancelled the sign-in. Tap Continue with Google to try again.";
+  if (c === "server_error" || d.includes("server"))
+    return "Google had a temporary issue. Please try again in a moment.";
+  if (c === "temporarily_unavailable")
+    return "The sign-in service is briefly unavailable. Please try again shortly.";
+  if (c === "invalid_request" || c === "unauthorized_client" || c === "unsupported_response_type")
+    return "Google sign-in is misconfigured. Try email sign-in or contact support.";
+  if (d.includes("popup") && d.includes("closed"))
+    return "The Google window was closed before sign-in finished. Please try again.";
+  if (d.includes("network") || d.includes("failed to fetch") || d.includes("offline"))
+    return "Network problem. Check your connection and try again.";
+  if (d.includes("provider is not enabled"))
+    return "Google sign-in is not enabled yet. Please use email sign-in for now.";
+
+  return description || "Something went wrong. Please try again or use email sign-in.";
+}
+
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,6 +51,28 @@ const Auth = () => {
   useEffect(() => {
     if (!authLoading && session) navigate("/");
   }, [session, authLoading, navigate]);
+
+  // Handle OAuth errors returned in URL when Google redirects back after a failure/cancellation
+  useEffect(() => {
+    const parseParams = (str: string) =>
+      new URLSearchParams(str.startsWith("#") || str.startsWith("?") ? str.slice(1) : str);
+    const hashParams = parseParams(window.location.hash);
+    const queryParams = parseParams(window.location.search);
+    const errorCode = hashParams.get("error") || queryParams.get("error");
+    const errorDesc =
+      hashParams.get("error_description") || queryParams.get("error_description") || "";
+
+    if (!errorCode) return;
+
+    toast({
+      title: "Google sign-in didn't complete",
+      description: friendlyOAuthError(errorCode, errorDesc),
+      variant: "destructive",
+    });
+
+    // Clean URL so the toast doesn't re-fire on re-render
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [toast]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,16 +114,32 @@ const Auth = () => {
 
   const onGoogle = async () => {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast({ title: "Google sign-in failed", description: result.error.message, variant: "destructive" });
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({
+          title: "Google sign-in failed",
+          description: friendlyOAuthError("", result.error.message),
+          variant: "destructive",
+        });
+        setBusy(false);
+        return;
+      }
+      if (result.redirected) return; // browser will navigate away to Google
+      navigate("/");
+    } catch (err) {
+      toast({
+        title: "Google sign-in failed",
+        description: friendlyOAuthError(
+          "",
+          err instanceof Error ? err.message : "Unexpected error",
+        ),
+        variant: "destructive",
+      });
       setBusy(false);
-      return;
     }
-    if (result.redirected) return;
-    navigate("/");
   };
 
   return (
