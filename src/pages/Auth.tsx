@@ -69,14 +69,16 @@ const Auth = () => {
 
   const onGoogle = async () => {
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
-    if (error) {
-      toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
+    if (result.error) {
+      toast({ title: "Google sign-in failed", description: result.error.message, variant: "destructive" });
       setBusy(false);
+      return;
     }
+    if (result.redirected) return;
+    navigate("/");
   };
 
   return (
