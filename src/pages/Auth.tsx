@@ -11,6 +11,29 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
+// Map OAuth/network error codes & messages to friendly, non-technical text.
+function friendlyOAuthError(code: string, description: string): string {
+  const c = (code || "").toLowerCase();
+  const d = (description || "").toLowerCase();
+
+  if (c === "access_denied" || d.includes("denied") || d.includes("cancel"))
+    return "You cancelled the sign-in. Tap Continue with Google to try again.";
+  if (c === "server_error" || d.includes("server"))
+    return "Google had a temporary issue. Please try again in a moment.";
+  if (c === "temporarily_unavailable")
+    return "The sign-in service is briefly unavailable. Please try again shortly.";
+  if (c === "invalid_request" || c === "unauthorized_client" || c === "unsupported_response_type")
+    return "Google sign-in is misconfigured. Try email sign-in or contact support.";
+  if (d.includes("popup") && d.includes("closed"))
+    return "The Google window was closed before sign-in finished. Please try again.";
+  if (d.includes("network") || d.includes("failed to fetch") || d.includes("offline"))
+    return "Network problem. Check your connection and try again.";
+  if (d.includes("provider is not enabled"))
+    return "Google sign-in is not enabled yet. Please use email sign-in for now.";
+
+  return description || "Something went wrong. Please try again or use email sign-in.";
+}
+
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
