@@ -29,6 +29,28 @@ const Auth = () => {
     if (!authLoading && session) navigate("/");
   }, [session, authLoading, navigate]);
 
+  // Handle OAuth errors returned in URL when Google redirects back after a failure/cancellation
+  useEffect(() => {
+    const parseParams = (str: string) =>
+      new URLSearchParams(str.startsWith("#") || str.startsWith("?") ? str.slice(1) : str);
+    const hashParams = parseParams(window.location.hash);
+    const queryParams = parseParams(window.location.search);
+    const errorCode = hashParams.get("error") || queryParams.get("error");
+    const errorDesc =
+      hashParams.get("error_description") || queryParams.get("error_description") || "";
+
+    if (!errorCode) return;
+
+    toast({
+      title: "Google sign-in didn't complete",
+      description: friendlyOAuthError(errorCode, errorDesc),
+      variant: "destructive",
+    });
+
+    // Clean URL so the toast doesn't re-fire on re-render
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [toast]);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -69,16 +91,32 @@ const Auth = () => {
 
   const onGoogle = async () => {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast({ title: "Google sign-in failed", description: result.error.message, variant: "destructive" });
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({
+          title: "Google sign-in failed",
+          description: friendlyOAuthError("", result.error.message),
+          variant: "destructive",
+        });
+        setBusy(false);
+        return;
+      }
+      if (result.redirected) return; // browser will navigate away to Google
+      navigate("/");
+    } catch (err) {
+      toast({
+        title: "Google sign-in failed",
+        description: friendlyOAuthError(
+          "",
+          err instanceof Error ? err.message : "Unexpected error",
+        ),
+        variant: "destructive",
+      });
       setBusy(false);
-      return;
     }
-    if (result.redirected) return;
-    navigate("/");
   };
 
   return (
