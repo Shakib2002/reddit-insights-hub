@@ -1,4 +1,6 @@
 const ALLOWED_ORIGINS = [
+  "https://redditlens.cc",
+  "https://www.redditlens.cc",
   "https://reddit-insights-hub.vercel.app",
   "https://reddit-insights-hub.lovable.app",
   "http://localhost:8080",
