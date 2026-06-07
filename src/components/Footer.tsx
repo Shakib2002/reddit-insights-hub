@@ -35,13 +35,13 @@ export const Footer = () => {
             />
             <span>by</span>
             <a
-              href="https://helloshakib.pro.bd/"
+              href="https://www.sanzox.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="group inline-flex items-center gap-1 font-semibold text-foreground hover:text-primary transition-colors"
             >
               <span className="border-b border-transparent group-hover:border-primary/60 transition-colors">
-                Shakibul Hasan Shakib
+                Sanzox
               </span>
               <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
             </a>
