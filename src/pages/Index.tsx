@@ -23,6 +23,7 @@ import { HeroBackground, HeroHeadline } from "@/components/home/HeroSection";
 import { FeatureCards } from "@/components/home/FeatureCards";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { StatsStrip } from "@/components/home/StatsStrip";
+import { CtaBanner } from "@/components/home/CtaBanner";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { hasReachedLimit, incrementDailySearchCount, getRemainingSearches } from "@/lib/usage";
 
@@ -878,6 +879,8 @@ const Index = () => {
       {!loading && <div aria-hidden className="h-px section-divider relative z-10" />}
       {!loading && <HowItWorks />}
       {!loading && <StatsStrip />}
+      {!loading && <div aria-hidden className="h-px section-divider relative z-10" />}
+      {!loading && <CtaBanner />}
 
       {/* Usage counter for free users */}
       {!loading && userTier === "free" && (
