@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, LogOut, User as UserIcon } from "lucide-react";
+import { LogIn, LogOut, User as UserIcon, Sparkles } from "lucide-react";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -54,6 +54,13 @@ export const Header = () => {
                 <DropdownMenuLabel className="text-xs text-muted-foreground font-normal truncate">
                   {user.email}
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                  <UserIcon className="h-4 w-4" /> My Reports
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/pricing")}>
+                  <Sparkles className="h-4 w-4" /> Pricing
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={async () => {
