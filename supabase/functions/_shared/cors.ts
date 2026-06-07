@@ -76,3 +76,73 @@ export function jsonResponse(
     { headers: { ...corsHeaders, "Content-Type": "application/json", ...extraHeaders } },
   );
 }
+
+// ---------- Auth middleware ----------
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/** Create a Supabase admin client (service_role) */
+export function createSupabaseAdmin() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+}
+
+export interface AuthResult {
+  userId: string | null;
+  tier: string;
+}
+
+/**
+ * Verify the Authorization header JWT and return user info + tier.
+ * For public-facing endpoints that allow anonymous access, set `required: false`.
+ * Returns an error Response if auth is required but missing/invalid.
+ */
+export async function verifyAuth(
+  req: Request,
+  corsHeaders: Record<string, string>,
+  options: { required?: boolean } = {},
+): Promise<{ auth: AuthResult } | { error: Response }> {
+  const { required = false } = options;
+  const authHeader = req.headers.get("authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (required) {
+      return { error: errorResponse(corsHeaders, "Authentication required", 401) };
+    }
+    return { auth: { userId: null, tier: "free" } };
+  }
+
+  try {
+    const token = authHeader.replace("Bearer ", "");
+    const supabase = createSupabaseAdmin();
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      if (required) {
+        return { error: errorResponse(corsHeaders, "Invalid or expired token", 401) };
+      }
+      return { auth: { userId: null, tier: "free" } };
+    }
+
+    // Fetch subscription tier
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    return {
+      auth: {
+        userId: user.id,
+        tier: (profile?.subscription_tier as string) ?? "free",
+      },
+    };
+  } catch {
+    if (required) {
+      return { error: errorResponse(corsHeaders, "Auth verification failed", 401) };
+    }
+    return { auth: { userId: null, tier: "free" } };
+  }
+}
+

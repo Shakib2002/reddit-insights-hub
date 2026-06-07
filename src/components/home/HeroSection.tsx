@@ -22,8 +22,8 @@ function ParticleField() {
     };
     resize();
 
-    // Create particles
-    const COUNT = 60;
+    // Create particles — skip on mobile for performance
+    const COUNT = window.innerWidth < 768 ? 0 : 60;
     const W = canvas.offsetWidth;
     const H = canvas.offsetHeight;
     for (let i = 0; i < COUNT; i++) {

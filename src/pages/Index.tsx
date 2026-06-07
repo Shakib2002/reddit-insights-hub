@@ -25,7 +25,8 @@ import { HowItWorks } from "@/components/home/HowItWorks";
 import { StatsStrip } from "@/components/home/StatsStrip";
 import { CtaBanner } from "@/components/home/CtaBanner";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import { hasReachedLimit, incrementDailySearchCount, getRemainingSearches } from "@/lib/usage";
+import { hasReachedLimit, incrementDailySearchCount, getRemainingSearches, getUserTier } from "@/lib/usage";
+import type { PlanTier } from "@/lib/pricing";
 
 const EXAMPLES = [
   "mental health apps",
@@ -294,7 +295,13 @@ const Index = () => {
   const [activeStep, setActiveStep] = useState<StepKey | "done" | null>(null);
   const [stepDetails, setStepDetails] = useState<Partial<Record<StepKey, string>>>({});
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const userTier = "free" as const; // TODO: Replace with real tier from useAuth after webhook integration
+  const [userTier, setUserTier] = useState<PlanTier>("free");
+
+  // Fetch real subscription tier from Supabase when user is logged in
+  useEffect(() => {
+    if (!user) { setUserTier("free"); return; }
+    getUserTier(user.id).then(setUserTier).catch(() => setUserTier("free"));
+  }, [user]);
 
   const onStep = (key: StepKey, detail?: string) => {
     setActiveStep(key);

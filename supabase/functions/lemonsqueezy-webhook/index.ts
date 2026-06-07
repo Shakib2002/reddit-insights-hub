@@ -12,12 +12,23 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  * - SUPABASE_SERVICE_ROLE_KEY: Supabase service role key (for admin writes)
  */
 
-const TIER_MAP: Record<string, string> = {
-  // TODO: Map your LemonSqueezy variant IDs to plan tiers
-  // "variant-id-founder": "founder",
-  // "variant-id-pro": "pro",
-  // "variant-id-agency": "agency",
-};
+/**
+ * Map LemonSqueezy variant IDs → plan tiers.
+ * Set these as Supabase Edge Function secrets:
+ *   LEMON_VARIANT_FOUNDER=your-variant-id
+ *   LEMON_VARIANT_PRO=your-variant-id
+ *   LEMON_VARIANT_AGENCY=your-variant-id
+ */
+function buildTierMap(): Record<string, string> {
+  const map: Record<string, string> = {};
+  const founder = Deno.env.get("LEMON_VARIANT_FOUNDER");
+  const pro = Deno.env.get("LEMON_VARIANT_PRO");
+  const agency = Deno.env.get("LEMON_VARIANT_AGENCY");
+  if (founder) map[founder] = "founder";
+  if (pro) map[pro] = "pro";
+  if (agency) map[agency] = "agency";
+  return map;
+}
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -28,29 +39,43 @@ serve(async (req: Request) => {
     const signature = req.headers.get("x-signature");
     const webhookSecret = Deno.env.get("LEMONSQUEEZY_WEBHOOK_SECRET");
 
-    // Verify webhook signature
-    if (webhookSecret && signature) {
-      const body = await req.clone().text();
-      const encoder = new TextEncoder();
-      const key = await crypto.subtle.importKey(
-        "raw",
-        encoder.encode(webhookSecret),
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"],
-      );
-      const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-      const hexSig = Array.from(new Uint8Array(sig))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
+    // SEC: Signature verification is MANDATORY — never skip it
+    if (!webhookSecret) {
+      console.error("LEMONSQUEEZY_WEBHOOK_SECRET not configured — rejecting webhook");
+      return new Response(JSON.stringify({ error: "Webhook secret not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (!signature) {
+      console.error("Missing x-signature header on webhook request");
+      return new Response(JSON.stringify({ error: "Missing signature" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-      if (hexSig !== signature) {
-        console.error("Webhook signature mismatch");
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
+    // Verify HMAC-SHA256 signature
+    const body = await req.clone().text();
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(webhookSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+    const hexSig = Array.from(new Uint8Array(sig))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    if (hexSig !== signature) {
+      console.error("Webhook signature mismatch");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const payload = await req.json();
@@ -79,6 +104,7 @@ serve(async (req: Request) => {
       eventName === "subscription_resumed"
     ) {
       const variantId = String(payload.data?.attributes?.variant_id ?? "");
+      const TIER_MAP = buildTierMap();
       tier = TIER_MAP[variantId] ?? "founder"; // Default to founder if variant not mapped
       const status = payload.data?.attributes?.status;
 

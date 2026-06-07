@@ -1,20 +1,4 @@
-const ALLOWED_ORIGINS = [
-  "https://redditlens.cc",
-  "https://www.redditlens.cc",
-  "https://reddit-insights-hub.vercel.app",
-  "https://reddit-insights-hub.lovable.app",
-  "http://localhost:8080",
-  "http://localhost:5173",
-];
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") ?? "";
-  return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Vary": "Origin",
-  };
-}
+import { getCorsHeaders, errorResponse, verifyAuth } from "../_shared/cors.ts";
 
 interface SerperResult {
   title: string;
