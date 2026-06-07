@@ -1,39 +1,18 @@
-const ALLOWED_ORIGINS = [
-  "https://redditlens.cc",
-  "https://www.redditlens.cc",
-  "https://reddit-insights-hub.vercel.app",
-  "https://reddit-insights-hub.lovable.app",
-  "http://localhost:8080",
-  "http://localhost:5173",
-];
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") ?? "";
-  return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Vary": "Origin",
-  };
-}
+import { getCorsHeaders, extractJson, errorResponse, verifyAuth, checkRateLimit, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
 
 const SYSTEM = "You are a startup advisor and product architect.";
-const AI_GATEWAY_URL = "https://api.fireworks.ai/inference/v1/chat/completions";
-const MODEL = "accounts/fireworks/models/deepseek-v4-pro";
-
-function extractJson(text: string): any {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON object found in response");
-  return JSON.parse(candidate.slice(start, end + 1));
-}
 
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Auth + rate limiting (blueprint is a Pro feature)
+    const authResult = await verifyAuth(req, corsHeaders);
+    if ("error" in authResult) return authResult.error;
+    const rateLimited = await checkRateLimit(req, corsHeaders, authResult.auth, "blueprint");
+    if (rateLimited) return rateLimited;
+
     const { appName, appDescription, painPoints = [], language = "en" } = await req.json();
     if (!appName || typeof appName !== "string") {
       return new Response(JSON.stringify({ error: "appName required" }), {

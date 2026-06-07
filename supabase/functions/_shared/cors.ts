@@ -146,3 +146,71 @@ export async function verifyAuth(
   }
 }
 
+// ---------- Rate limiting ----------
+
+const FREE_DAILY_LIMIT = 3;
+
+/**
+ * Server-side rate limiting for free users.
+ * Checks the rate_limits table and returns an error Response if limit exceeded.
+ * Automatically records usage on success.
+ * Paid users always pass.
+ */
+export async function checkRateLimit(
+  req: Request,
+  corsHeaders: Record<string, string>,
+  auth: AuthResult,
+  endpoint = "search",
+): Promise<Response | null> {
+  // Paid users have unlimited access
+  if (auth.tier !== "free") return null;
+
+  const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const key = auth.userId ?? `ip:${clientIp}`;
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const supabase = createSupabaseAdmin();
+
+    // Count today's requests for this key
+    const { count, error: countError } = await supabase
+      .from("rate_limits")
+      .select("*", { count: "exact", head: true })
+      .eq("key", key)
+      .eq("endpoint", endpoint)
+      .gte("created_at", `${today}T00:00:00Z`);
+
+    if (countError) {
+      console.error("Rate limit check failed:", countError);
+      // Fail open — don't block users if rate limiting table is down
+      return null;
+    }
+
+    if ((count ?? 0) >= FREE_DAILY_LIMIT) {
+      return new Response(
+        JSON.stringify({
+          error: "Daily search limit reached (3/day on free plan). Upgrade for unlimited searches.",
+          code: "RATE_LIMITED",
+          limit: FREE_DAILY_LIMIT,
+          resetAt: `${today}T23:59:59Z`,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "Retry-After": "3600",
+          },
+        },
+      );
+    }
+
+    // Record this usage
+    await supabase.from("rate_limits").insert({ key, endpoint });
+    return null;
+  } catch (e) {
+    console.error("Rate limit error:", e);
+    // Fail open
+    return null;
+  }
+}

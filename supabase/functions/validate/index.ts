@@ -1,27 +1,8 @@
-const ALLOWED_ORIGINS = [
-  "https://redditlens.cc",
-  "https://www.redditlens.cc",
-  "https://reddit-insights-hub.vercel.app",
-  "https://reddit-insights-hub.lovable.app",
-  "http://localhost:8080",
-  "http://localhost:5173",
-];
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") ?? "";
-  return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Vary": "Origin",
-  };
-}
+import { getCorsHeaders, extractJson, errorResponse, verifyAuth, checkRateLimit, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
 
 const SYSTEM = `You are a brutal but fair startup validator. You have seen thousands of startup ideas fail and succeed. Your job is to validate app ideas against real Reddit data — not hype, not assumptions, only evidence.
 
 Be honest. If the idea is bad, say so clearly. If it is good, explain why with specific evidence from Reddit discussions. Always return valid JSON only.`;
-
-const AI_GATEWAY_URL = "https://api.fireworks.ai/inference/v1/chat/completions";
-const MODEL = "accounts/fireworks/models/deepseek-v4-pro";
 
 const DIMENSION_NAMES = [
   "Problem Validation",
@@ -31,15 +12,6 @@ const DIMENSION_NAMES = [
   "Target Audience Clarity",
   "Unique Value Proposition",
 ] as const;
-
-function extractJson(text: string): any {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON object found in response");
-  return JSON.parse(candidate.slice(start, end + 1));
-}
 
 function clampScore(n: any): number {
   const v = Number(n) || 0;
@@ -97,6 +69,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Auth + rate limiting
+    const authResult = await verifyAuth(req, corsHeaders);
+    if ("error" in authResult) return authResult.error;
+    const rateLimited = await checkRateLimit(req, corsHeaders, authResult.auth, "validate");
+    if (rateLimited) return rateLimited;
+
     const body = await req.json();
     const { keyword: rawKeyword, appIdea: rawAppIdea, results = [], language = "en" } = body;
     // SEC-4: Cap input lengths

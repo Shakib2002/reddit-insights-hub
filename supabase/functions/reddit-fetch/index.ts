@@ -1,4 +1,4 @@
-import { getCorsHeaders, errorResponse, verifyAuth } from "../_shared/cors.ts";
+import { getCorsHeaders, errorResponse, verifyAuth, checkRateLimit } from "../_shared/cors.ts";
 
 interface SerperResult {
   title: string;
@@ -110,6 +110,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Auth + rate limiting
+    const authResult = await verifyAuth(req, corsHeaders);
+    if ("error" in authResult) return authResult.error;
+    const rateLimited = await checkRateLimit(req, corsHeaders, authResult.auth, "search");
+    if (rateLimited) return rateLimited;
+
     const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
     if (!SERPER_API_KEY) {
       return new Response(
