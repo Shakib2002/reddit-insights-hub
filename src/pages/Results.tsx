@@ -637,7 +637,11 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
         {/* Page header */}
         <div className="fade-in flex flex-col md:flex-row md:items-end justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <div className="text-sm text-muted-foreground">Research report</div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Research report</span>
+              <span className="text-border">·</span>
+              <span className="tabular-nums">{new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            </div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">
               {inputs.keyword}
             </h1>
@@ -646,6 +650,21 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
                 <span className="font-medium text-foreground">Idea:</span> {inputs.appIdea}
               </p>
             )}
+          </div>
+          {/* Quick export toolbar */}
+          <div className="flex items-center gap-2 no-print shrink-0">
+            <Button onClick={copyReport} size="sm" className="h-8 gap-1.5 btn-copy-orange text-xs">
+              <Copy className="h-3.5 w-3.5" /> Copy
+            </Button>
+            <Button onClick={shareReport} size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
+              <Share2 className="h-3.5 w-3.5" /> Share
+            </Button>
+            <Button onClick={() => window.print()} size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
+              <Printer className="h-3.5 w-3.5" /> PDF
+            </Button>
+            <Button onClick={() => downloadFile(`${safeFilename(inputs.keyword)}.csv`, reportToCsv(data), "text/csv")} size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
+              <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
+            </Button>
           </div>
         </div>
 
@@ -785,6 +804,29 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
             { id: "fit", label: "Fit" },
           ]}
         />
+
+        {/* Report Quality Score */}
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 reveal-up">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Report quality</span>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const quality = redditCount >= 15 ? 5 : redditCount >= 10 ? 4 : redditCount >= 5 ? 3 : redditCount >= 1 ? 2 : 1;
+                return (
+                  <div
+                    key={star}
+                    className={`h-2 w-6 rounded-full transition-colors ${star <= quality ? "bg-primary" : "bg-muted"}`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          <span className="text-border">|</span>
+          <span className="text-xs text-muted-foreground">
+            Based on <strong className="text-foreground">{redditCount}</strong> Reddit posts
+            {redditCount < 10 && " · Load more for better accuracy"}
+          </span>
+        </div>
 
         {/* 3. Summary */}
         <Card id="summary" className="summary-card p-6 md:p-7 reveal-up scroll-mt-32 relative">
