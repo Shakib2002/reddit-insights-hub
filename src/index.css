@@ -367,6 +367,109 @@
       0 0 80px rgba(255, 69, 0, 0.08);
   }
 
+  /* ============== Animated gradient mesh orbs ============== */
+  .hero-orb-primary {
+    background: radial-gradient(closest-side, rgba(255,69,0,0.22), rgba(255,69,0,0));
+    filter: blur(40px);
+    animation: meshFloat1 8s ease-in-out infinite;
+  }
+  .hero-orb-secondary {
+    background: radial-gradient(closest-side, rgba(59,130,246,0.12), rgba(59,130,246,0));
+    filter: blur(60px);
+    animation: meshFloat2 10s ease-in-out infinite;
+  }
+  .hero-orb-accent {
+    background: radial-gradient(closest-side, rgba(168,85,247,0.10), rgba(168,85,247,0));
+    filter: blur(70px);
+    animation: meshFloat3 12s ease-in-out infinite;
+  }
+  @keyframes meshFloat1 {
+    0%, 100% { transform: translate(-50%, 0) scale(1); }
+    33%      { transform: translate(-48%, -15px) scale(1.05); }
+    66%      { transform: translate(-52%, 10px) scale(0.95); }
+  }
+  @keyframes meshFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(30px, -20px) scale(1.08); }
+  }
+  @keyframes meshFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-25px, 15px) scale(1.1); }
+  }
+
+  /* ============== Text shimmer effect ============== */
+  .hero-text-shimmer {
+    background: linear-gradient(
+      90deg,
+      #ff4500 0%,
+      #ff8a5b 25%,
+      #ffb088 50%,
+      #ff8a5b 75%,
+      #ff4500 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: textShimmer 4s ease-in-out infinite;
+  }
+  @keyframes textShimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+
+  /* ============== Badge glow pulse ============== */
+  .hero-badge-glow {
+    animation: badgeGlow 3s ease-in-out infinite;
+  }
+  @keyframes badgeGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(255, 69, 0, 0.15); }
+    50%      { box-shadow: 0 0 20px rgba(255, 69, 0, 0.3); }
+  }
+
+  /* ============== Animated border glow (search card) ============== */
+  .animated-border-glow {
+    background: conic-gradient(
+      from var(--border-angle, 0deg),
+      rgba(255,69,0,0.4) 0%,
+      rgba(255,69,0,0.05) 25%,
+      rgba(168,85,247,0.2) 50%,
+      rgba(255,69,0,0.05) 75%,
+      rgba(255,69,0,0.4) 100%
+    );
+    filter: blur(6px);
+    animation: rotateBorder 4s linear infinite;
+  }
+  @keyframes rotateBorder {
+    to { --border-angle: 360deg; }
+  }
+  @property --border-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+  /* ============== 3D card container ============== */
+  .card-3d-container {
+    transform-style: preserve-3d;
+  }
+  .card-3d {
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  /* ============== Scroll reveal animation ============== */
+  .scroll-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .scroll-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   /* Floating orbs */
   .orb {
     position: absolute;
@@ -384,6 +487,17 @@
   .orb-1 { animation: float1 8s ease-in-out infinite; }
   .orb-2 { animation: float2 10s ease-in-out infinite; }
   .orb-3 { animation: float1 12s ease-in-out infinite reverse; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-text-shimmer { animation: none; }
+    .hero-badge-glow { animation: none; }
+    .animated-border-glow { animation: none; }
+    .hero-orb-primary,
+    .hero-orb-secondary,
+    .hero-orb-accent { animation: none; }
+    .orb-1, .orb-2, .orb-3 { animation: none; }
+    .scroll-reveal { opacity: 1; transform: none; }
+  }
 }
 
 /* Print styles */

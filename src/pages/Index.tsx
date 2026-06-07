@@ -519,10 +519,41 @@ const Index = () => {
       <main className="container max-w-3xl pt-16 md:pt-24 pb-12 md:pb-16 relative z-10">
           <HeroHeadline />
 
-        {/* Search Card with gradient glow */}
-        <div className="relative max-w-[640px] mx-auto hero-rise" style={{ animationDelay: "460ms" }}>
-          <div aria-hidden className="absolute -inset-px rounded-[22px] bg-gradient-to-br from-primary/40 via-primary/10 to-transparent blur-md opacity-60" />
-          <Card className="relative p-5 sm:p-7 md:p-8 search-card-glow border-border bg-card rounded-[20px]">
+        {/* Search Card with 3D tilt + animated gradient border */}
+        <div
+          id="search-card"
+          className="relative max-w-[640px] mx-auto hero-rise card-3d-container"
+          style={{ animationDelay: "460ms", perspective: "1000px" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+            const card = e.currentTarget.querySelector<HTMLElement>(".card-3d");
+            if (card) {
+              card.style.transform = `rotateY(${x * 6}deg) rotateX(${-y * 6}deg)`;
+            }
+            // Move glow to cursor
+            const glow = e.currentTarget.querySelector<HTMLElement>(".card-cursor-glow");
+            if (glow) {
+              glow.style.left = `${e.clientX - rect.left}px`;
+              glow.style.top = `${e.clientY - rect.top}px`;
+              glow.style.opacity = "1";
+            }
+          }}
+          onMouseLeave={(e) => {
+            const card = e.currentTarget.querySelector<HTMLElement>(".card-3d");
+            if (card) card.style.transform = "rotateY(0deg) rotateX(0deg)";
+            const glow = e.currentTarget.querySelector<HTMLElement>(".card-cursor-glow");
+            if (glow) glow.style.opacity = "0";
+          }}
+        >
+          {/* Animated rotating border */}
+          <div aria-hidden className="absolute -inset-px rounded-[22px] animated-border-glow opacity-60" />
+          {/* Cursor-following glow */}
+          <div aria-hidden className="card-cursor-glow absolute h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none transition-opacity duration-300 opacity-0 z-0"
+            style={{ background: "radial-gradient(closest-side, rgba(255,69,0,0.15), transparent)", filter: "blur(20px)" }}
+          />
+          <Card className="card-3d relative p-5 sm:p-7 md:p-8 search-card-glow border-border bg-card rounded-[20px] transition-transform duration-200 ease-out">
           {(
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Mode toggle */}
