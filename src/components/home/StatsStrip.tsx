@@ -7,7 +7,7 @@ export function StatsStrip() {
             { v: "10M+", l: "Reddit posts indexed" },
             { v: "2,400+", l: "Ideas validated" },
             { v: "<60s", l: "Average analysis time" },
-            { v: "100%", l: "Free to use" },
+            { v: "100%", l: "Free tier included" },
           ].map((s) => (
             <div key={s.l} className="text-center p-4 rounded-lg">
               <div className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">

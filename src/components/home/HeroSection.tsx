@@ -77,7 +77,7 @@ export function HeroHeadline() {
         <span className="text-border">·</span>
         <span>Founder favorite</span>
         <span className="text-border">·</span>
-        <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-success" /> Free forever</span>
+        <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-success" /> Free to start</span>
       </div>
     </div>
   );
