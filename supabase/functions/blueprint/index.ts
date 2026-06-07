@@ -72,6 +72,9 @@ Provide exactly 5 mvpFeatures, 4-6 techStack items.`;
       },
       body: JSON.stringify({
         model: MODEL,
+        max_tokens: 3000,
+        temperature: 0.3,
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userPrompt },
