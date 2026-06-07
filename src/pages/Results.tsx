@@ -312,6 +312,7 @@ const Results = () => {
   const [evidenceSearch, setEvidenceSearch] = useState("");
   const [evidenceSignal, setEvidenceSignal] = useState<"all" | "High" | "Medium" | "Low">("all");
   const [evidenceSubreddit, setEvidenceSubreddit] = useState<string>("all");
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   const [blueprintFor, setBlueprintFor] = useState<{ name: string; description: string } | null>(null);
 
@@ -330,9 +331,14 @@ const Results = () => {
       navigate("/");
       return;
     }
-    const parsed: ResultsPayload = JSON.parse(stored);
-    setData(parsed);
-    if (parsed.inputs.numResults) setNumResults(parsed.inputs.numResults);
+    try {
+      const parsed: ResultsPayload = JSON.parse(stored);
+      setData(parsed);
+      if (parsed.inputs.numResults) setNumResults(parsed.inputs.numResults);
+    } catch {
+      console.error("Failed to parse stored results");
+      navigate("/");
+    }
   }, [navigate, searchParams]);
 
   // Dynamic document title for SEO + tab clarity
@@ -785,9 +791,18 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           <h2 className="text-[11px] font-semibold text-[#555566] uppercase tracking-[2px] mb-3">
             Summary
           </h2>
-          <p className="text-[15px] text-muted-foreground leading-[1.8] line-clamp-3">
+          <p className={`text-[15px] text-muted-foreground leading-[1.8] ${summaryExpanded ? "" : "line-clamp-3"}`}>
             {analysis.summary}
           </p>
+          {analysis.summary && analysis.summary.length > 200 && (
+            <button
+              type="button"
+              onClick={() => setSummaryExpanded((v) => !v)}
+              className="text-xs text-primary hover:underline mt-2 no-print"
+            >
+              {summaryExpanded ? "Show less" : "Read more"}
+            </button>
+          )}
         </Card>
 
         {/* 4. Pain Points */}

@@ -32,6 +32,14 @@ export const Header = () => {
         </Link>
         <div className="flex items-center gap-1.5">
           <HistoryDrawer />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-muted-foreground hover:text-primary hidden sm:inline-flex"
+            onClick={() => navigate("/pricing")}
+          >
+            Pricing
+          </Button>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

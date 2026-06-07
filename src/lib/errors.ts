@@ -58,7 +58,7 @@ export function toFriendlyError(
   if (lower.includes("credits exhausted") || lower.includes("ai credits") || raw.includes("402")) {
     return {
       title: "AI credits exhausted",
-      description: "Your Lovable workspace has run out of AI credits. Add more to keep generating reports.",
+      description: "Your AI service has run out of credits. Please check your Fireworks AI account.",
       stage: "ai",
       retryable: false,
     };
@@ -71,10 +71,10 @@ export function toFriendlyError(
       retryable: true,
     };
   }
-  if (lower.includes("lovable_api_key")) {
+  if (lower.includes("fireworks_api_key") || lower.includes("lovable_api_key")) {
     return {
       title: "AI service not configured",
-      description: "The AI gateway key is missing. Contact support if this persists.",
+      description: "The AI API key is missing. Set FIREWORKS_API_KEY in your Supabase edge function secrets.",
       stage: "ai",
       retryable: false,
     };
@@ -132,4 +132,13 @@ export function toFriendlyError(
     stage: "unknown",
     retryable: true,
   };
+}
+
+/**
+ * Extract a user-facing error message from a Supabase edge function error.
+ * Handles the common `error.context.body` JSON pattern.
+ * Use this instead of inline `(error as any).context?.body` IIFEs.
+ */
+export function extractEdgeFunctionError(error: unknown): string {
+  return pickMessage(error) || "An unexpected error occurred.";
 }

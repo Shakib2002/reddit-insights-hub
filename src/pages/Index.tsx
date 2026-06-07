@@ -11,7 +11,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { toFriendlyError } from "@/lib/errors";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Search, ChevronDown, GitCompare, X, Sparkles, ShieldCheck, Target, DollarSign, CheckCircle2, Zap, Users, BarChart3, ArrowRight, Heart } from "lucide-react";
+import { Search, ChevronDown, GitCompare, X, ShieldCheck } from "lucide-react";
 import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 import { dbSaveSearch, dbSaveValidation } from "@/lib/db-history";
@@ -19,6 +19,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { type LoadingStep } from "@/components/LoadingSteps";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { LivePainFeed } from "@/components/LivePainFeed";
+import { HeroBackground, HeroHeadline } from "@/components/home/HeroSection";
+import { FeatureCards } from "@/components/home/FeatureCards";
+import { HowItWorks } from "@/components/home/HowItWorks";
+import { StatsStrip } from "@/components/home/StatsStrip";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { hasReachedLimit, incrementDailySearchCount, getRemainingSearches } from "@/lib/usage";
 
 const EXAMPLES = [
   "mental health apps",
@@ -286,6 +292,8 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState<StepKey | "done" | null>(null);
   const [stepDetails, setStepDetails] = useState<Partial<Record<StepKey, string>>>({});
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const userTier = "free" as const; // TODO: Replace with real tier from useAuth after webhook integration
 
   const onStep = (key: StepKey, detail?: string) => {
     setActiveStep(key);
@@ -309,6 +317,10 @@ const Index = () => {
   }, []);
 
   const runQuickSearch = async (topic: string) => {
+    if (hasReachedLimit(userTier)) {
+      setShowUpgrade(true);
+      return;
+    }
     setKeyword(topic);
     setValidateMode(false);
     setCompareMode(false);
@@ -338,6 +350,7 @@ const Index = () => {
         dbSaveSearch(user.id, result.payload).catch(() => {});
       }
       setActiveStep("done");
+      incrementDailySearchCount();
       navigate("/results");
     } catch (e) {
       console.error(e);
@@ -364,6 +377,11 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Usage limit check
+    if (hasReachedLimit(userTier)) {
+      setShowUpgrade(true);
+      return;
+    }
     if (!keyword.trim()) {
       toast({ title: "Keyword is required", variant: "destructive" });
       return;
@@ -410,6 +428,7 @@ const Index = () => {
           );
         }
         setActiveStep("done");
+        incrementDailySearchCount();
         navigate("/validate?mode=validate");
       } else if (compareMode) {
         const [left, right] = await Promise.all([
@@ -439,6 +458,7 @@ const Index = () => {
           dbSaveSearch(user.id, right.payload).catch(() => {});
         }
         setActiveStep("done");
+        incrementDailySearchCount();
         navigate("/compare");
       } else {
         const result = await runOneSearch({
@@ -463,6 +483,7 @@ const Index = () => {
           dbSaveSearch(user.id, result.payload).catch(() => {});
         }
         setActiveStep("done");
+        incrementDailySearchCount();
         navigate("/results");
       }
     } catch (e) {
@@ -492,116 +513,10 @@ const Index = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <Header />
 
-      {/* Subtle gradient fade below navbar */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[60px] h-24 navbar-fade z-0" />
-
-      {/* Layered hero background */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-        {/* Radial glow — top center orange */}
-        <div
-          className="absolute -top-40 left-1/2 -translate-x-1/2 h-[700px] w-[1100px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(closest-side, rgba(255,69,0,0.18), rgba(255,69,0,0))",
-            filter: "blur(40px)",
-          }}
-        />
-        {/* Radial glow — bottom left blue tint */}
-        <div
-          className="absolute top-[60%] -left-40 h-[520px] w-[520px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(closest-side, rgba(59,130,246,0.10), rgba(59,130,246,0))",
-            filter: "blur(60px)",
-          }}
-        />
-        {/* Radial glow — right side */}
-        <div
-          className="absolute top-[20%] -right-40 h-[520px] w-[520px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(closest-side, rgba(255,69,0,0.10), rgba(255,69,0,0))",
-            filter: "blur(70px)",
-          }}
-        />
-
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 hero-bg-grid opacity-60" />
-
-        {/* Noise texture overlay */}
-        <div className="absolute inset-0 hero-bg-noise" />
-
-        {/* Floating orbs */}
-        <div
-          className="orb orb-1"
-          style={{
-            top: "10%",
-            left: "-80px",
-            height: "300px",
-            width: "300px",
-            background: "rgba(255,69,0,0.04)",
-            filter: "blur(80px)",
-          }}
-        />
-        <div
-          className="orb orb-2"
-          style={{
-            bottom: "-100px",
-            right: "-120px",
-            height: "400px",
-            width: "400px",
-            background: "rgba(120,60,255,0.04)",
-            filter: "blur(100px)",
-          }}
-        />
-        <div
-          className="orb orb-3"
-          style={{
-            top: "45%",
-            right: "10%",
-            height: "200px",
-            width: "200px",
-            background: "rgba(255,69,0,0.03)",
-            filter: "blur(60px)",
-          }}
-        />
-      </div>
+      <HeroBackground />
 
       <main className="container max-w-3xl pt-16 md:pt-24 pb-12 md:pb-16 relative z-10">
-        {/* Hero */}
-        <div className="text-center mb-8 md:mb-10">
-          <div
-            className="hero-rise inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-medium mb-6 text-primary"
-            style={{ background: "rgba(255,69,0,0.1)", border: "1px solid rgba(255,69,0,0.3)", animationDelay: "0ms" }}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Powered by AI · Real Reddit data
-          </div>
-          <h1
-            className="hero-rise text-4xl sm:text-5xl md:text-6xl lg:text-[64px] font-bold tracking-tight mb-4 leading-[1.05]"
-            style={{ animationDelay: "120ms" }}
-          >
-            Find Real Problems
-            <br />
-            <span className="gradient-text-orange font-extrabold">Worth Building</span>
-          </h1>
-          <p
-            className="hero-rise text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-6 px-2 leading-relaxed"
-            style={{ animationDelay: "240ms" }}
-          >
-            Validate startup ideas in 30 seconds. Get AI-powered pain points, revenue models, and competitor gaps from real Reddit discussions.
-          </p>
-          <div
-            className="hero-rise flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground/80"
-            style={{ animationDelay: "340ms" }}
-          >
-            <span>2,400+ ideas analyzed</span>
-            <span className="text-border">·</span>
-            <span>Founder favorite</span>
-            <span className="text-border">·</span>
-            <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-success" /> Free forever</span>
-          </div>
-        </div>
+          <HeroHeadline />
 
         {/* Search Card with gradient glow */}
         <div className="relative max-w-[640px] mx-auto hero-rise" style={{ animationDelay: "460ms" }}>
@@ -909,7 +824,8 @@ const Index = () => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full gradient-orange text-white font-semibold text-[16px] h-[52px] rounded-xl shadow-glow-strong hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(255,69,0,0.5)] transition-all border-0"
+                disabled={loading}
+                className="w-full gradient-orange text-white font-semibold text-[16px] h-[52px] rounded-xl shadow-glow-strong hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(255,69,0,0.5)] transition-all border-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
                 {validateMode ? <ShieldCheck className="h-5 w-5" /> : <Search className="h-5 w-5" />}
                 {validateMode
@@ -957,116 +873,26 @@ const Index = () => {
         )}
       </main>
 
-      {/* Section divider */}
       {!loading && <div aria-hidden className="h-px section-divider relative z-10" />}
-
-      {/* Feature highlights */}
-      {!loading && (
-        <section className="features-bg py-16 md:py-20 relative z-10">
-          <div className="container max-w-5xl">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">
-              Everything you need to validate ideas
-            </h2>
-            <p className="text-muted-foreground">
-              Stop guessing. Start building what people actually want.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-            {[
-              {
-                icon: Target,
-                title: "Pain Point Detection",
-                desc: "Surface real frustrations from authentic Reddit discussions, not AI hallucinations.",
-                color: "text-primary bg-primary/10",
-              },
-              {
-                icon: DollarSign,
-                title: "Revenue Models",
-                desc: "Get pricing benchmarks, MRR potential, and proven monetization strategies.",
-                color: "text-success bg-success/10",
-              },
-              {
-                icon: CheckCircle2,
-                title: "Build or Skip Verdict",
-                desc: "AI-powered go/no-go decision based on demand, competition, and feasibility.",
-                color: "text-yellow-600 bg-yellow-500/10",
-              },
-            ].map((f) => (
-              <Card key={f.title} className="p-5 md:p-6 hover:border-primary/40 hover:shadow-md transition-all group">
-                <div className={`inline-flex h-11 w-11 items-center justify-center rounded-lg ${f.color} mb-3 group-hover:scale-110 transition-transform`}>
-                  <f.icon className="h-5 w-5" />
-                </div>
-                <h3 className="font-semibold text-base mb-1.5">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-              </Card>
-            ))}
-          </div>
-          </div>
-        </section>
-      )}
-
+      {!loading && <FeatureCards />}
       {!loading && <div aria-hidden className="h-px section-divider relative z-10" />}
+      {!loading && <HowItWorks />}
+      {!loading && <StatsStrip />}
 
-      {/* How it works */}
-      {!loading && (
-        <section className="bg-muted/30 border-y border-border py-16 md:py-20">
-          <div className="container max-w-5xl">
-            <div className="text-center mb-10">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">How it works</p>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-                From idea to insight in 3 steps
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 relative">
-              {[
-                { n: "01", icon: Search, title: "Enter your idea", desc: "Type a keyword or describe your app concept." },
-                { n: "02", icon: Zap, title: "AI scans Reddit", desc: "We fetch and analyze hundreds of real discussions." },
-                { n: "03", icon: BarChart3, title: "Get insights", desc: "Receive a full report with pain points & verdict." },
-              ].map((s, i) => (
-                <div key={s.n} className="relative">
-                  <Card className="p-5 md:p-6 h-full hover:shadow-md transition-all">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="text-2xl font-bold text-primary/30 tabular-nums">{s.n}</span>
-                      <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <s.icon className="h-4 w-4" />
-                      </div>
-                    </div>
-                    <h3 className="font-semibold mb-1">{s.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-                  </Card>
-                  {i < 2 && (
-                    <ArrowRight className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 h-5 w-5 text-muted-foreground/40 z-10" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+      {/* Usage counter for free users */}
+      {!loading && userTier === "free" && (
+        <div className="fixed bottom-4 right-4 z-40 bg-card/90 backdrop-blur-sm border border-border rounded-full px-4 py-2 shadow-lg text-xs text-muted-foreground flex items-center gap-2">
+          <span>{getRemainingSearches(userTier)}/3 free searches left</span>
+          <button
+            onClick={() => navigate("/pricing")}
+            className="text-primary font-medium hover:underline"
+          >
+            Upgrade
+          </button>
+        </div>
       )}
 
-      {/* Stats strip */}
-      {!loading && (
-        <section className="stats-bg py-16 md:py-20 relative z-10">
-          <div className="container max-w-5xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {[
-              { v: "10M+", l: "Reddit posts indexed" },
-              { v: "2,400+", l: "Ideas validated" },
-              { v: "<60s", l: "Average analysis time" },
-              { v: "100%", l: "Free to use" },
-            ].map((s) => (
-              <div key={s.l} className="text-center p-4 rounded-lg">
-                <div className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
-                  {s.v}
-                </div>
-                <div className="text-xs md:text-sm text-muted-foreground mt-1">{s.l}</div>
-              </div>
-            ))}
-          </div>
-          </div>
-        </section>
-      )}
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} reason="limit" />
 
     </div>
   );

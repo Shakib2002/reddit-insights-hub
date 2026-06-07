@@ -106,6 +106,7 @@ export async function dbGetPublicSearch(id: string) {
     .from("searches")
     .select("payload, kind")
     .eq("id", id)
+    .eq("is_public", true)
     .maybeSingle();
   if (error || !data) return null;
   return data as { payload: any; kind: "search" | "validate" | "compare" };

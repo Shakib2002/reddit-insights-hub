@@ -43,7 +43,12 @@ const Validate = () => {
       navigate("/");
       return;
     }
-    setData(JSON.parse(stored));
+    try {
+      setData(JSON.parse(stored));
+    } catch {
+      console.error("Failed to parse stored validation");
+      navigate("/");
+    }
   }, [navigate, searchParams]);
 
   // Animate score circle 0 → final

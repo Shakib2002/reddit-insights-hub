@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { extractEdgeFunctionError } from "@/lib/errors";
 import type { RedditPost } from "@/lib/types";
 
 interface CompetitorResult {
@@ -54,10 +55,7 @@ export function CompetitorIntelSection({
         body: { competitor: competitor.trim(), keyword, existingResults: existingResults.slice(0, 15) },
       });
       if (error) {
-        const msg = (error as any).context?.body
-          ? JSON.parse((error as any).context.body).error
-          : error.message;
-        throw new Error(msg);
+        throw new Error(extractEdgeFunctionError(error));
       }
       setResult(data.result);
       setAnalyzedName(competitor.trim());

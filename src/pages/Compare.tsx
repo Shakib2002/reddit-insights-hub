@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Copy, Share2, Printer, Trophy } from "lucide-react";
+import { ArrowLeft, Share2, Printer, Trophy } from "lucide-react";
 import type { ComparePayload, ResultsPayload } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 
@@ -129,7 +129,12 @@ const Compare = () => {
       navigate("/");
       return;
     }
-    setData(JSON.parse(stored));
+    try {
+      setData(JSON.parse(stored));
+    } catch {
+      console.error("Failed to parse stored comparison");
+      navigate("/");
+    }
   }, [navigate, searchParams]);
 
   const winnerSide = useMemo<"left" | "right" | null>(() => {

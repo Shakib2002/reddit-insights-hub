@@ -1,11 +1,20 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "https://reddit-insights-hub.lovable.app",
+  "http://localhost:8080",
+  "http://localhost:5173",
+];
 
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash-lite";
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") ?? "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
+}
+
+const AI_GATEWAY_URL = "https://api.fireworks.ai/inference/v1/chat/completions";
+const MODEL = "accounts/fireworks/models/deepseek-v4-pro";
 
 function extractJson(text: string): any {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -17,11 +26,12 @@ function extractJson(text: string): any {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const API_KEY = Deno.env.get("FIREWORKS_API_KEY");
+    if (!API_KEY) throw new Error("FIREWORKS_API_KEY not configured");
 
     const prompt = `Generate 10 realistic Reddit pain-point cards a curious founder might find right now. Cover varied popular topics: productivity, mental health, fitness, food delivery, AI tools, side projects, freelancing, parenting, study habits, finance.
 

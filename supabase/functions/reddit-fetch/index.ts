@@ -1,8 +1,17 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "https://reddit-insights-hub.lovable.app",
+  "http://localhost:8080",
+  "http://localhost:5173",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") ?? "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
+}
 
 interface SerperResult {
   title: string;
@@ -110,6 +119,7 @@ async function callSerper(query: string, apiKey: string): Promise<{ ok: boolean;
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -125,20 +135,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { keyword, subreddit, numResults, extraQueries } = await req.json();
-    if (!keyword || typeof keyword !== "string") {
+    const body = await req.json().catch(() => ({}));
+    const { keyword: rawKeyword, subreddit, numResults, extraQueries } = body ?? {};
+    if (!rawKeyword || typeof rawKeyword !== "string") {
       return new Response(JSON.stringify({ error: "keyword required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    // SEC-4: Cap input lengths to prevent prompt injection & cost abuse
+    const keyword = rawKeyword.slice(0, 200);
 
     const k = keyword.trim();
     const subList: string[] = (subreddit ?? "")
       .toString()
+      .slice(0, 500)
       .split(/[,\s]+/)
       .map((s: string) => s.replace(/^r\//i, "").trim())
-      .filter((s: string) => s.length > 0);
+      .filter((s: string) => s.length > 0 && s.length <= 50)
+      .slice(0, 10);
 
     // Simple, proven queries
     const queries = [

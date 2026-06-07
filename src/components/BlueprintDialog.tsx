@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Copy, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { extractEdgeFunctionError } from "@/lib/errors";
 import type { Blueprint, PainPoint, ReportLanguage } from "@/lib/types";
 
 interface Props {
@@ -47,10 +48,7 @@ export const BlueprintDialog = ({
           body: { appName, appDescription, painPoints, language },
         });
         if (error) {
-          const msg = (error as any).context?.body
-            ? JSON.parse((error as any).context.body).error
-            : error.message;
-          throw new Error(msg);
+          throw new Error(extractEdgeFunctionError(error));
         }
         if (!cancelled) setBlueprint(data?.blueprint ?? null);
       } catch (e) {

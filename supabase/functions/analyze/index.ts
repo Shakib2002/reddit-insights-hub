@@ -1,8 +1,17 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "https://reddit-insights-hub.lovable.app",
+  "http://localhost:8080",
+  "http://localhost:5173",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") ?? "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
+}
 
 const SYSTEM = `You are a world-class product researcher who specializes in finding validated startup opportunities from Reddit discussions.
 
@@ -20,8 +29,8 @@ Rules:
 - Be specific: 'Notion is too complex for simple task lists' not 'apps are bad'
 - Always return valid JSON only — no markdown, no explanation`;
 
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash";
+const AI_GATEWAY_URL = "https://api.fireworks.ai/inference/v1/chat/completions";
+const MODEL = "accounts/fireworks/models/deepseek-v4-pro";
 
 function extractJson(text: string): any {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -159,12 +168,15 @@ function normalizeAnalysis(raw: any) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { results = [], keyword, appIdea, language = "en" } = body ?? {};
-    if (!keyword || typeof keyword !== "string" || !keyword.trim()) {
+    const { results = [], keyword: rawKeyword, appIdea: rawAppIdea, language = "en" } = body ?? {};
+    const keyword = typeof rawKeyword === "string" ? rawKeyword.slice(0, 200) : "";
+    const appIdea = typeof rawAppIdea === "string" ? rawAppIdea.slice(0, 500) : "";
+    if (!keyword || !keyword.trim()) {
       return new Response(JSON.stringify({ error: "keyword required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -177,8 +189,8 @@ Deno.serve(async (req) => {
       });
     }
     const lang = ["en", "bn", "both"].includes(language) ? language : "en";
-    const API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const API_KEY = Deno.env.get("FIREWORKS_API_KEY");
+    if (!API_KEY) throw new Error("FIREWORKS_API_KEY not configured");
 
     const resultsText = results.length
       ? results

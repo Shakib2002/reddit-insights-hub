@@ -6,6 +6,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { History as HistoryIcon, Trash2, CloudOff } from "lucide-react";
@@ -133,13 +144,34 @@ export const HistoryDrawer = () => {
         </div>
 
         {items.length > 0 && (
-          <Button
-            variant="outline"
-            onClick={onClear}
-            className="w-full text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" /> Clear history
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" /> Clear history
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear all search history?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete {items.length} saved {items.length === 1 ? "search" : "searches"}.
+                  {fromDb ? " This cannot be undone." : " Local data will be removed from this device."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onClear}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete all
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </SheetContent>
     </Sheet>
