@@ -1,4 +1,5 @@
 const ALLOWED_ORIGINS = [
+  "https://reddit-insights-hub.vercel.app",
   "https://reddit-insights-hub.lovable.app",
   "http://localhost:8080",
   "http://localhost:5173",
