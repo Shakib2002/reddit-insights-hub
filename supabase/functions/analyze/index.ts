@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const lang = ["en", "bn", "both"].includes(language) ? language : "en";
+    const lang = (typeof language === "string" && language.trim()) ? language.trim() : "English";
     const API_KEY = Deno.env.get("FIREWORKS_API_KEY");
     if (!API_KEY) throw new Error("FIREWORKS_API_KEY not configured");
 
@@ -190,12 +190,9 @@ Deno.serve(async (req) => {
       ? `The user's app idea is: "${appIdea}". Use it to bias the validation reasoning.`
       : `The user has NOT provided a specific app idea. Score the overall opportunity strength of this topic on Reddit.`;
 
-    const langInstruction =
-      lang === "bn"
-        ? `Write ALL textual fields in Bangla (Bengali script). Keep numeric fields, "signal" / "size" / "commercialIntent" / "willingToPay" enums, "subreddit", and "recommendedSubreddits" in English.`
-        : lang === "both"
-          ? `For every textual field provide BOTH English and Bangla in this exact format: "English text || বাংলা টেক্সট". Keep numeric fields, enums, "subreddit", and "recommendedSubreddits" in English only.`
-          : `Write all textual fields in clear, natural English.`;
+    const langInstruction = lang.toLowerCase() === "english"
+      ? `Write all textual fields in clear, natural English.`
+      : `Write ALL textual fields in ${lang}. Keep numeric fields, "signal" / "size" / "commercialIntent" / "willingToPay" enums, "subreddit", and "recommendedSubreddits" in English.`;
 
     const userPrompt = `Analyze these Reddit discussions about "${keyword}". ${ideaLine}
 

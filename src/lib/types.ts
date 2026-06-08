@@ -1,4 +1,4 @@
-export type ReportLanguage = "en" | "bn" | "both";
+export type ReportLanguage = string;
 
 export interface PainPoint {
   title: string;

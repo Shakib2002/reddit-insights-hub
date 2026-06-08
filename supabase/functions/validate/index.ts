@@ -107,12 +107,10 @@ Deno.serve(async (req) => {
           .join("\n\n")
       : "(No Reddit search results retrieved — base your analysis on general knowledge of common Reddit discussions about this topic, and lower confidence accordingly.)";
 
-    const langInstruction =
-      language === "bn"
-        ? `Write ALL textual fields (verdictReason, evidence, redditQuote, strengths, weaknesses, pivotSuggestions, nextSteps) in Bangla (Bengali script). Keep numeric fields, "verdict" enum values, and dimension "name" values in English.`
-        : language === "both"
-          ? `For every textual field provide BOTH English and Bangla in this exact format: "English text || বাংলা টেক্সট". Keep numeric fields, "verdict" enums, and dimension "name" values in English only.`
-          : `Write all textual fields in clear, natural English.`;
+    const lang = (typeof language === "string" && language.trim()) ? language.trim() : "English";
+    const langInstruction = lang.toLowerCase() === "english"
+      ? `Write all textual fields in clear, natural English.`
+      : `Write ALL textual fields (verdictReason, evidence, redditQuote, strengths, weaknesses, pivotSuggestions, nextSteps) in ${lang}. Keep numeric fields, "verdict" enum values, and dimension "name" values in English.`;
 
     const userPrompt = `Validate this app idea against real Reddit discussions.
 

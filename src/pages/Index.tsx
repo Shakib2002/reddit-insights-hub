@@ -136,7 +136,7 @@ async function runOneSearch(opts: {
   subreddit: string;
   numResults: number;
   includeAllContext: boolean;
-  language: "en" | "bn" | "both";
+  language: string;
   onStep?: (key: StepKey, detail?: string) => void;
 }): Promise<{ payload: ResultsPayload; lowData: boolean; totalFound: number }> {
   opts.onStep?.("fetch", `Searching for "${opts.keyword}"`);
@@ -208,7 +208,7 @@ async function runValidate(opts: {
   appIdea: string;
   subreddit: string;
   numResults: number;
-  language: "en" | "bn" | "both";
+  language: string;
   onStep?: (key: StepKey, detail?: string) => void;
 }): Promise<{ payload: import("@/lib/types").ValidatePayload; lowData: boolean; totalFound: number }> {
   opts.onStep?.("fetch", `Searching for "${opts.keyword}"`);
@@ -290,7 +290,7 @@ const Index = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [numResults, setNumResults] = useState(10);
   const [includeAllContext, setIncludeAllContext] = useState(true);
-  const [language, setLanguage] = useState<"en" | "bn" | "both">("en");
+  const [language, setLanguage] = useState("English");
   const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState<StepKey | "done" | null>(null);
   const [stepDetails, setStepDetails] = useState<Partial<Record<StepKey, string>>>({});
@@ -849,26 +849,37 @@ const Index = () => {
 
               <div className="space-y-2">
                 <Label className="text-sm">Report language</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-wrap gap-2">
                   {([
-                    { value: "en", label: "English" },
-                    { value: "bn", label: "বাংলা" },
-                    { value: "both", label: "Both" },
-                  ] as const).map((opt) => (
+                    "English", "বাংলা", "हिन्दी", "Español", "Français",
+                    "Deutsch", "Português", "العربية", "中文", "日本語",
+                    "한국어", "Русский", "Türkçe", "Italiano", "Nederlands",
+                  ]).map((lang) => (
                     <button
-                      key={opt.value}
+                      key={lang}
                       type="button"
-                      onClick={() => setLanguage(opt.value)}
-                      className={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
-                        language === opt.value
+                      onClick={() => setLanguage(lang)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        language === lang
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-secondary text-secondary-foreground border-border hover:bg-accent hover:text-accent-foreground"
                       }`}
                     >
-                      {opt.label}
+                      {lang}
                     </button>
                   ))}
                 </div>
+                <Input
+                  type="text"
+                  placeholder="Or type any language..."
+                  value={![
+                    "English", "বাংলা", "हिन्दी", "Español", "Français",
+                    "Deutsch", "Português", "العربية", "中文", "日本語",
+                    "한국어", "Русский", "Türkçe", "Italiano", "Nederlands",
+                  ].includes(language) ? language : ""}
+                  onChange={(e) => setLanguage(e.target.value || "English")}
+                  className="mt-2 h-8 text-sm"
+                />
               </div>
 
               {validateMode && compareMode && (
