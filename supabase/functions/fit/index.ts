@@ -71,7 +71,6 @@ Rules:
         model: MODEL,
         max_tokens: 2000,
         temperature: 0.3,
-        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: "You are a startup advisor scoring founder-market fit. Return valid JSON only." },
           { role: "user", content: prompt },

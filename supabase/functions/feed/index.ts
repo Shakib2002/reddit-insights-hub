@@ -40,7 +40,6 @@ Rules:
         model: MODEL,
         max_tokens: 2000,
         temperature: 0.7,
-        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: "You generate realistic-sounding Reddit pain-point snippets. Return valid JSON only." },
           { role: "user", content: prompt },

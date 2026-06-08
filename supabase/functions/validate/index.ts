@@ -160,7 +160,6 @@ Rules:
         model: MODEL,
         max_tokens: 3000,
         temperature: 0.3,
-        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userPrompt },
