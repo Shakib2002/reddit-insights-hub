@@ -170,12 +170,13 @@ async function runOneSearch(opts: {
   const fetched = redditData?.results?.length ?? 0;
   opts.onStep?.("score", `Merged & ranked ${fetched} unique posts`);
 
-  opts.onStep?.("ai", `Analyzing ${fetched} posts with Gemini`);
+  opts.onStep?.("ai", `Analyzing top ${Math.min(fetched, 10)} posts with AI`);
+  const analyzeResults = (redditData?.results ?? []).slice(0, 10);
   const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke(
     "analyze",
     {
       body: {
-        results: redditData?.results ?? [],
+        results: analyzeResults,
         keyword: opts.keyword,
         appIdea: opts.appIdea,
         language: opts.language,
