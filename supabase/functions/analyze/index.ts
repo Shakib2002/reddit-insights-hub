@@ -269,15 +269,22 @@ Return ONLY this JSON (no prose, no code fences):
 }
 
 Rules:
-- sentiment numbers MUST sum to 100
+- sentiment numbers MUST sum to 100${lang.toLowerCase() === "english" ? `
 - Return 5 to 7 pain points. Each pain point must be from a DIFFERENT angle. Do not repeat similar complaints. Cover separately: usability, pricing, missing features, integration issues, and performance.
 - You MUST return EXACTLY 4 competitor gaps (5 maximum). Never return fewer than 4. If you cannot find 4 from the data, use your knowledge of the topic to fill in the rest.
 - Return 4 to 6 niche opportunities. Cover a range of sizes: at least one Large, one Medium, one Small.
 - Provide 3 app opportunities, 3-4 personas, and 4-6 recommended subreddits.
 - For each competitor gap, name the SPECIFIC existing tools (like Notion, Trello, Slack, Obsidian) in "affectedTools" — be concrete about which tools fail at what
+- revenueModels: return EXACTLY 3 models, each a different type if possible. Mark exactly ONE as recommended:true (the strongest fit).` : `
+- Return EXACTLY 3 pain points. Each from a DIFFERENT angle. Keep descriptions SHORT (1-2 sentences max).
+- Return EXACTLY 3 competitor gaps. Keep descriptions SHORT.
+- Return EXACTLY 2 niche opportunities.
+- Provide 2 app opportunities, 2 personas, and 3 recommended subreddits.
+- For each competitor gap, name SPECIFIC existing tools in "affectedTools".
+- revenueModels: return EXACTLY 2 models. Mark ONE as recommended:true.
+- IMPORTANT: Keep ALL string values SHORT and CONCISE to minimize output size.`}
 - buildOrSkip: score each factor 0-10 honestly based on the discussions. Verdict logic: avg>=7 BUILD IT, 5-6.9 NEEDS WORK, <5 SKIP IT.
-- trend: judge whether interest in this topic is Growing, Stable, or Declining based on the recency and volume of discussions.
-- revenueModels: return EXACTLY 3 models, each a different type if possible. Mark exactly ONE as recommended:true (the strongest fit).`;
+- trend: judge whether interest in this topic is Growing, Stable, or Declining based on the recency and volume of discussions.`;
 
     // AI call (single attempt with robust JSON parser)
     let parsed: any;
@@ -289,7 +296,7 @@ Rules:
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: lang.toLowerCase() === "english" ? 4096 : 6144,
+        max_tokens: 4096,
         temperature: 0.3,
         messages: [
           { role: "system", content: SYSTEM },
