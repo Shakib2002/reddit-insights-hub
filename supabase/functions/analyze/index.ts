@@ -329,8 +329,11 @@ Rules:
     try {
       parsed = extractJson(content);
     } catch (e) {
-      console.error("JSON parse failed. Content:", content.slice(0, 1200));
-      throw new Error("Model returned malformed JSON. Please retry.");
+      console.error("JSON parse failed. Content:", content.slice(0, 2000));
+      return new Response(JSON.stringify({ error: "Model returned malformed JSON. Please retry.", rawContent: content.slice(0, 1500) }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const analysis = normalizeAnalysis(parsed);
