@@ -325,6 +325,13 @@ const Index = () => {
   }, []);
 
   const runQuickSearch = async (topic: string) => {
+    // Must be logged in to search
+    if (!user) {
+      sessionStorage.setItem("redditlens_prefill", topic);
+      toast({ title: "Sign in to search", description: "Create a free account to analyze Reddit data." });
+      navigate("/auth");
+      return;
+    }
     if (hasReachedLimit(userTier)) {
       setShowUpgrade(true);
       return;
@@ -385,6 +392,13 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Must be logged in to search
+    if (!user) {
+      sessionStorage.setItem("redditlens_prefill", keyword);
+      toast({ title: "Sign in to search", description: "Create a free account to analyze Reddit data." });
+      navigate("/auth");
+      return;
+    }
     // Usage limit check
     if (hasReachedLimit(userTier)) {
       setShowUpgrade(true);
