@@ -289,7 +289,7 @@ Rules:
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 4096,
+        max_tokens: lang.toLowerCase() === "english" ? 4096 : 8192,
         temperature: 0.3,
         messages: [
           { role: "system", content: SYSTEM },
@@ -330,10 +330,7 @@ Rules:
       parsed = extractJson(content);
     } catch (e) {
       console.error("JSON parse failed. Content:", content.slice(0, 2000));
-      return new Response(JSON.stringify({ error: "Model returned malformed JSON. Please retry.", rawContent: content.slice(0, 1500) }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("Model returned malformed JSON. Please retry.");
     }
 
     const analysis = normalizeAnalysis(parsed);
