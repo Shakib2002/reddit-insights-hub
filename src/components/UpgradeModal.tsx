@@ -70,7 +70,7 @@ export function UpgradeModal({ open, onClose, reason = "limit", featureName }: U
           </div>
           <h2 className="text-2xl font-bold tracking-tight mb-1">
             {reason === "limit"
-              ? "You've used all 3 free searches today"
+              ? "You've used all 3 free searches this month"
               : `${featureName ?? "This feature"} requires a paid plan`}
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -140,8 +140,8 @@ export function UpgradeModal({ open, onClose, reason = "limit", featureName }: U
         <div className="px-6 pb-5 text-center">
           <p className="text-xs text-muted-foreground">
             {remaining > 0
-              ? `${remaining} free search${remaining === 1 ? "" : "es"} remaining today.`
-              : "Free searches reset at midnight."}{" "}
+              ? `${remaining} free search${remaining === 1 ? "" : "es"} remaining this month.`
+              : "Free searches reset on the 1st of each month."}{" "}
             Cancel anytime. Powered by LemonSqueezy.
           </p>
         </div>

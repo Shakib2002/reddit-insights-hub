@@ -1,47 +1,47 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { PlanTier } from "./pricing";
 
-const DAILY_COUNT_KEY = "redditlens_daily_searches";
+const MONTHLY_COUNT_KEY = "redditlens_monthly_searches";
 
-interface DailyCount {
-  date: string; // YYYY-MM-DD
+interface MonthlyCount {
+  month: string; // YYYY-MM
   count: number;
 }
 
-/** Get today's search count from localStorage (works for free users without auth) */
-export function getDailySearchCount(): number {
+/** Get current month's search count from localStorage */
+export function getMonthlySearchCount(): number {
   try {
-    const raw = localStorage.getItem(DAILY_COUNT_KEY);
+    const raw = localStorage.getItem(MONTHLY_COUNT_KEY);
     if (!raw) return 0;
-    const data: DailyCount = JSON.parse(raw);
-    const today = new Date().toISOString().slice(0, 10);
-    if (data.date !== today) return 0; // Reset at midnight
+    const data: MonthlyCount = JSON.parse(raw);
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    if (data.month !== currentMonth) return 0; // Reset at new month
     return data.count;
   } catch {
     return 0;
   }
 }
 
-/** Increment today's search count */
+/** Increment current month's search count */
 export function incrementDailySearchCount(): void {
-  const today = new Date().toISOString().slice(0, 10);
-  const current = getDailySearchCount();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const current = getMonthlySearchCount();
   localStorage.setItem(
-    DAILY_COUNT_KEY,
-    JSON.stringify({ date: today, count: current + 1 }),
+    MONTHLY_COUNT_KEY,
+    JSON.stringify({ month: currentMonth, count: current + 1 }),
   );
 }
 
-/** Check if the user has reached their daily search limit */
+/** Check if the user has reached their monthly search limit */
 export function hasReachedLimit(tier: PlanTier): boolean {
   if (tier !== "free") return false; // Paid users have no limit
-  return getDailySearchCount() >= 3;
+  return getMonthlySearchCount() >= 3;
 }
 
-/** Get remaining searches for today */
+/** Get remaining searches for this month */
 export function getRemainingSearches(tier: PlanTier): number {
   if (tier !== "free") return Infinity;
-  return Math.max(0, 3 - getDailySearchCount());
+  return Math.max(0, 3 - getMonthlySearchCount());
 }
 
 /**

@@ -33,13 +33,13 @@ export const PLANS: PricingPlan[] = [
     price: "$0",
     priceNote: "forever",
     features: [
-      "3 searches per day",
+      "3 searches per month",
       "Basic AI report",
       "Pain point detection",
       "Build or Skip verdict",
     ],
     limits: {
-      searchesPerDay: 3,
+      searchesPerMonth: 3,
       compareEnabled: false,
       competitorIntel: false,
       blueprint: false,
