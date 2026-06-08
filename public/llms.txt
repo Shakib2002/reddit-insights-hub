@@ -1,0 +1,43 @@
+# RedditLens
+
+> AI-powered Reddit research and startup validation tool
+
+RedditLens (https://redditlens.cc) helps entrepreneurs, indie hackers, and product teams validate startup ideas using real Reddit discussions.
+
+## What RedditLens Does
+
+- **Pain Point Discovery**: Finds specific, actionable user complaints from Reddit discussions
+- **Startup Idea Validation**: Gives a data-driven Build/Skip verdict based on real user demand
+- **Competitor Gap Analysis**: Identifies weaknesses in existing tools (like Notion, Trello, Slack)
+- **Niche Opportunity Finder**: Discovers underserved market segments with commercial potential
+- **Revenue Model Suggestions**: Recommends monetization strategies based on user willingness to pay
+- **Multi-Language Reports**: Generate analysis reports in 15+ languages including English, Hindi, Bangla, Arabic, Spanish, French, German, and more
+
+## How It Works
+
+1. Enter a keyword or topic (e.g., "fitness apps", "project management tools")
+2. RedditLens searches Reddit for relevant discussions
+3. AI analyzes the discussions and generates a comprehensive report
+4. Get actionable insights: pain points, competitor gaps, app ideas, user personas
+
+## Key Features
+
+- Free plan: 3 searches/month
+- AI-powered analysis using advanced language models
+- Real data from Reddit discussions (not synthetic/generated)
+- Competitor intelligence with specific tool comparisons
+- User persona generation
+- Revenue model recommendations
+- App blueprint generation
+
+## Built By
+
+RedditLens is built by Sanzox (https://www.sanzox.com).
+Contact: shakib@redditlens.app
+
+## Links
+
+- Homepage: https://redditlens.cc
+- Pricing: https://redditlens.cc/pricing
+- Privacy Policy: https://redditlens.cc/privacy
+- Terms of Service: https://redditlens.cc/terms
