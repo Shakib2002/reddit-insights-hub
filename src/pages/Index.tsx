@@ -278,7 +278,7 @@ async function runValidate(opts: {
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [keyword, setKeyword] = useState("");
   const [keyword2, setKeyword2] = useState("");
   const [compareMode, setCompareMode] = useState(false);
@@ -326,6 +326,7 @@ const Index = () => {
 
   const runQuickSearch = async (topic: string) => {
     // Must be logged in to search
+    if (authLoading) return; // Still loading auth state, wait
     if (!user) {
       sessionStorage.setItem("redditlens_prefill", topic);
       toast({ title: "Sign in to search", description: "Create a free account to analyze Reddit data." });
@@ -393,6 +394,7 @@ const Index = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Must be logged in to search
+    if (authLoading) return; // Still loading auth state, wait
     if (!user) {
       sessionStorage.setItem("redditlens_prefill", keyword);
       toast({ title: "Sign in to search", description: "Create a free account to analyze Reddit data." });
