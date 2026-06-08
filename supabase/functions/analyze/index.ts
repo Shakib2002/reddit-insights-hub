@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
 
     const langInstruction = lang.toLowerCase() === "english"
       ? `Write all textual fields in clear, natural English.`
-      : `Write ALL textual string values in ${lang}. CRITICAL: All JSON keys MUST remain in English exactly as shown in the schema. Only translate the string VALUES. Never use unescaped quotes or newlines inside JSON string values — use \\" and \\n if needed. Keep numeric fields, "signal" / "size" / "commercialIntent" / "willingToPay" enums, "subreddit", and "recommendedSubreddits" in English.`;
+      : `Write ALL textual string values in ${lang}. Be CONCISE — use short sentences to stay within output limits. CRITICAL: All JSON keys MUST remain in English exactly as shown in the schema. Only translate the string VALUES. Never use unescaped double quotes or newlines inside JSON string values. Keep numeric fields, "signal" / "size" / "commercialIntent" / "willingToPay" enums, "subreddit", and "recommendedSubreddits" in English.`;
 
     const userPrompt = `Analyze these Reddit discussions about "${keyword}". ${ideaLine}
 
@@ -289,7 +289,7 @@ Rules:
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: lang.toLowerCase() === "english" ? 4096 : 8192,
+        max_tokens: lang.toLowerCase() === "english" ? 4096 : 6144,
         temperature: 0.3,
         messages: [
           { role: "system", content: SYSTEM },
