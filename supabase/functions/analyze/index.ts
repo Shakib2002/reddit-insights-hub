@@ -278,57 +278,62 @@ Rules:
 - trend: judge whether interest in this topic is Growing, Stable, or Declining based on the recency and volume of discussions.
 - revenueModels: return EXACTLY 3 models, each a different type if possible. Mark exactly ONE as recommended:true (the strongest fit).`;
 
-    const resp = await fetch(AI_GATEWAY_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 4096,
-        temperature: 0.3,
-        messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    });
-
-    if (!resp.ok) {
-      const t = await resp.text();
-      console.error("AI gateway error:", resp.status, t);
-      if (resp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (resp.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: `AI analysis failed (${resp.status})` }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // AI call with retry (non-English languages sometimes produce malformed JSON on first try)
+    let parsed: any;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const resp = await fetch(AI_GATEWAY_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 4096,
+          temperature: attempt === 0 ? 0.3 : 0.2,
+          messages: [
+            { role: "system", content: SYSTEM },
+            { role: "user", content: userPrompt },
+          ],
+        }),
       });
-    }
 
-    const data = await resp.json();
-    const content: string = data?.choices?.[0]?.message?.content ?? "";
-    if (!content) {
-      console.error("Empty model response:", JSON.stringify(data).slice(0, 500));
-      throw new Error("Model returned empty response");
-    }
+      if (!resp.ok) {
+        const t = await resp.text();
+        console.error("AI gateway error:", resp.status, t);
+        if (resp.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (resp.status === 402) {
+          return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ error: `AI analysis failed (${resp.status})` }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-    let parsed;
-    try {
-      parsed = extractJson(content);
-    } catch (e) {
-      console.error("JSON parse failed. Content:", content.slice(0, 800));
-      throw new Error("Model returned malformed JSON. Please retry.");
+      const data = await resp.json();
+      const content: string = data?.choices?.[0]?.message?.content ?? "";
+      if (!content) {
+        console.error("Empty model response:", JSON.stringify(data).slice(0, 500));
+        if (attempt === 1) throw new Error("Model returned empty response");
+        continue;
+      }
+
+      try {
+        parsed = extractJson(content);
+        break; // success
+      } catch (e) {
+        console.error(`JSON parse failed (attempt ${attempt + 1}). Content:`, content.slice(0, 800));
+        if (attempt === 1) throw new Error("Model returned malformed JSON after retry. Please try again.");
+      }
     }
 
     const analysis = normalizeAnalysis(parsed);

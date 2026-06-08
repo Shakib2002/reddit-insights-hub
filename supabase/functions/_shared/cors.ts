@@ -32,12 +32,41 @@ export function handleCors(req: Request): Response | null {
 
 /** Extract a JSON object from AI model text that may include markdown fences. */
 export function extractJson(text: string): any {
+  // Strip markdown code fences if present
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = fenced ? fenced[1] : text;
   const start = candidate.indexOf("{");
   const end = candidate.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("No JSON object found in response");
-  return JSON.parse(candidate.slice(start, end + 1));
+  let jsonStr = candidate.slice(start, end + 1);
+
+  // Attempt 1: direct parse
+  try { return JSON.parse(jsonStr); } catch { /* continue to repair */ }
+
+  // Attempt 2: fix common AI model JSON issues
+  jsonStr = jsonStr
+    // Remove trailing commas before } or ]
+    .replace(/,\s*([}\]])/g, "$1")
+    // Fix unescaped newlines inside string values
+    .replace(/(?<=:\s*"[^"]*)\n/g, "\\n")
+    // Remove control characters except \n \r \t
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "")
+    // Fix single quotes used instead of double quotes for keys
+    .replace(/(?<=[\{,]\s*)'([^']+)'\s*:/g, '"$1":');
+
+  try { return JSON.parse(jsonStr); } catch { /* continue */ }
+
+  // Attempt 3: aggressive bracket balancing — find the largest parseable substring
+  let depth = 0, bestEnd = -1;
+  for (let i = 0; i < jsonStr.length; i++) {
+    if (jsonStr[i] === "{") depth++;
+    else if (jsonStr[i] === "}") { depth--; if (depth === 0) { bestEnd = i; break; } }
+  }
+  if (bestEnd > 0) {
+    try { return JSON.parse(jsonStr.slice(0, bestEnd + 1)); } catch { /* give up */ }
+  }
+
+  throw new Error("Failed to parse JSON from model output");
 }
 
 /** Fireworks AI gateway URL */
