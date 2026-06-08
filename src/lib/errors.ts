@@ -45,7 +45,18 @@ export function toFriendlyError(
     };
   }
 
-  // AI gateway specific
+  // Monthly free search limit
+  if (lower.includes("monthly search limit") || lower.includes("rate_limited") || lower.includes("3/month")) {
+    return {
+      title: "🔒 Free searches used up",
+      description: "You've used all 3 free searches this month. Upgrade to Pro for unlimited searches, deeper analysis, and priority support.",
+      hint: "Your free searches reset on the 1st of each month.",
+      stage: "rate_limit" as any,
+      retryable: false,
+    };
+  }
+
+  // AI gateway rate limit (different from monthly limit)
   if (lower.includes("rate limit") || raw.includes("429")) {
     return {
       title: "Rate limit reached",

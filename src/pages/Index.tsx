@@ -152,7 +152,17 @@ async function runOneSearch(opts: {
     },
   );
   if (redditErr) {
-    const err = new Error((redditErr as any).message ?? "Reddit fetch failed");
+    console.error("reddit-fetch error:", redditErr, "context:", (redditErr as any).context);
+    // Extract the actual error message from edge function response
+    let msg = (redditErr as any).message ?? "Reddit fetch failed";
+    try {
+      const body = (redditErr as any).context?.body;
+      if (body) {
+        const parsed = typeof body === "string" ? JSON.parse(body) : body;
+        msg = parsed?.error || msg;
+      }
+    } catch { /* use default msg */ }
+    const err = new Error(msg);
     (err as any)._stage = "reddit";
     throw err;
   }
@@ -379,7 +389,11 @@ const Index = () => {
           ? `${friendly.description} ${friendly.hint}`
           : friendly.description,
         variant: "destructive",
-        action: friendly.retryable ? (
+        action: (friendly as any).stage === "rate_limit" ? (
+          <ToastAction altText="Upgrade" onClick={() => navigate("/pricing")}>
+            Upgrade
+          </ToastAction>
+        ) : friendly.retryable ? (
           <ToastAction altText="Retry" onClick={() => runQuickSearch(topic)}>
             Retry
           </ToastAction>
@@ -521,7 +535,14 @@ const Index = () => {
           ? `${friendly.description} ${friendly.hint}`
           : friendly.description,
         variant: "destructive",
-        action: friendly.retryable ? (
+        action: (friendly as any).stage === "rate_limit" ? (
+          <ToastAction
+            altText="Upgrade"
+            onClick={() => navigate("/pricing")}
+          >
+            Upgrade
+          </ToastAction>
+        ) : friendly.retryable ? (
           <ToastAction
             altText="Retry"
             onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
