@@ -14,7 +14,8 @@ Rules:
 - Prioritize pain points where users mention money (I'd pay, worth it, subscription)
 - Ignore generic complaints with no actionable solution
 - Be specific: 'Notion is too complex for simple task lists' not 'apps are bad'
-- Always return valid JSON only — no markdown, no explanation`;
+- Always return valid JSON only — no markdown, no explanation, no code fences
+- CRITICAL JSON SAFETY: All JSON keys must be in English. When writing non-English text in string values, NEVER use unescaped double quotes — use single quotes or unicode escapes instead. Ensure all string values are properly escaped for JSON.`;
 
 const AI_GATEWAY_URL = "https://api.fireworks.ai/inference/v1/chat/completions";
 const MODEL = "accounts/fireworks/models/deepseek-v4-pro";
@@ -278,63 +279,58 @@ Rules:
 - trend: judge whether interest in this topic is Growing, Stable, or Declining based on the recency and volume of discussions.
 - revenueModels: return EXACTLY 3 models, each a different type if possible. Mark exactly ONE as recommended:true (the strongest fit).`;
 
-    // AI call with retry (non-English languages sometimes produce malformed JSON on first try)
+    // AI call (single attempt with robust JSON parser)
     let parsed: any;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const resp = await fetch(AI_GATEWAY_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          max_tokens: 4096,
-          temperature: attempt === 0 ? 0.3 : 0.2,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: SYSTEM },
-            { role: "user", content: userPrompt },
-          ],
-        }),
-      });
+    const resp = await fetch(AI_GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 4096,
+        temperature: 0.3,
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+    });
 
-      if (!resp.ok) {
-        const t = await resp.text();
-        console.error("AI gateway error:", resp.status, t);
-        if (resp.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        if (resp.status === 402) {
-          return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }), {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        return new Response(JSON.stringify({ error: `AI analysis failed (${resp.status})` }), {
-          status: 500,
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.error("AI gateway error:", resp.status, t);
+      if (resp.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+          status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      const data = await resp.json();
-      const content: string = data?.choices?.[0]?.message?.content ?? "";
-      if (!content) {
-        console.error("Empty model response:", JSON.stringify(data).slice(0, 500));
-        if (attempt === 1) throw new Error("Model returned empty response");
-        continue;
+      if (resp.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
+      return new Response(JSON.stringify({ error: `AI analysis failed (${resp.status})` }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-      try {
-        parsed = extractJson(content);
-        break; // success
-      } catch (e) {
-        console.error(`JSON parse failed (attempt ${attempt + 1}). Content:`, content.slice(0, 800));
-        if (attempt === 1) throw new Error("Model returned malformed JSON after retry. Please try again.");
-      }
+    const data = await resp.json();
+    const content: string = data?.choices?.[0]?.message?.content ?? "";
+    if (!content) {
+      console.error("Empty model response:", JSON.stringify(data).slice(0, 500));
+      throw new Error("Model returned empty response");
+    }
+
+    try {
+      parsed = extractJson(content);
+    } catch (e) {
+      console.error("JSON parse failed. Content:", content.slice(0, 1200));
+      throw new Error("Model returned malformed JSON. Please retry.");
     }
 
     const analysis = normalizeAnalysis(parsed);
