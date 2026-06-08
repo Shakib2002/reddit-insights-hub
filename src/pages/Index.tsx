@@ -27,6 +27,7 @@ import { CtaBanner } from "@/components/home/CtaBanner";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { hasReachedLimit, incrementDailySearchCount, getRemainingSearches, getUserTier } from "@/lib/usage";
 import type { PlanTier } from "@/lib/pricing";
+import { runBackgroundSearch, requestNotificationPermission, type AnalysisStatus } from "@/lib/background-analysis";
 
 const EXAMPLES = [
   "mental health apps",
@@ -443,117 +444,73 @@ const Index = () => {
     setActiveStep(null);
     setStepDetails({});
 
-    try {
-      if (validateMode) {
-        const result = await runValidate({
-          keyword,
-          appIdea,
-          subreddit,
-          numResults,
-          language,
-          onStep,
-        });
-        onStep("render", `Building report from ${result.totalFound} posts`);
-        if (result.lowData) {
+    // Request notification permission on first search
+    requestNotificationPermission();
+
+    const mode = validateMode ? "validate" : compareMode ? "compare" : "search";
+    const destPath = validateMode ? "/validate?mode=validate" : compareMode ? "/compare" : "/results";
+
+    // Fire analysis as a background task that survives navigation
+    runBackgroundSearch({
+      keyword,
+      appIdea,
+      subreddit,
+      numResults,
+      includeAllContext,
+      language,
+      userId: user?.id,
+      mode,
+      keyword2,
+      onStep: (status: AnalysisStatus, detail?: string) => {
+        // Update UI steps if component is still mounted
+        try {
+          if (status === "fetching") onStep("fetch", detail);
+          else if (status === "analyzing") onStep("ai", detail);
+          else if (status === "saving") onStep("render", detail);
+        } catch { /* component may be unmounted, ignore */ }
+      },
+    })
+      .then(() => {
+        // Analysis complete — navigate to results
+        try {
+          setActiveStep("done");
+          navigate(destPath);
+        } catch {
+          // Component unmounted — AnalysisProgressBar will show "View" button
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+        try {
+          const stage = (e as any)?._stage ?? (validateMode ? "validate" : "unknown");
+          const friendly = toFriendlyError(e, stage);
           toast({
-            title: "Limited Reddit data found",
-            description: `Only ${result.totalFound} relevant Reddit results — validation may be less accurate.`,
+            title: friendly.title,
+            description: friendly.hint
+              ? `${friendly.description} ${friendly.hint}`
+              : friendly.description,
+            variant: "destructive",
+            action: (friendly as any).stage === "rate_limit" ? (
+              <ToastAction
+                altText="Upgrade"
+                onClick={() => navigate("/pricing")}
+              >
+                Upgrade
+              </ToastAction>
+            ) : friendly.retryable ? (
+              <ToastAction
+                altText="Retry"
+                onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+              >
+                Retry
+              </ToastAction>
+            ) : undefined,
           });
+          setLoading(false);
+        } catch {
+          // Component unmounted — error shown via AnalysisProgressBar
         }
-        sessionStorage.setItem("redditlens_validate", JSON.stringify(result.payload));
-        saveValidationToHistory(result.payload);
-        if (user) {
-          dbSaveValidation(user.id, result.payload).catch((err) =>
-            console.warn("DB save failed (non-blocking)", err),
-          );
-        }
-        setActiveStep("done");
-        incrementDailySearchCount();
-        navigate("/validate?mode=validate");
-      } else if (compareMode) {
-        const [left, right] = await Promise.all([
-          runOneSearch({ keyword, appIdea, subreddit, numResults, includeAllContext, language, onStep }),
-          runOneSearch({ keyword: keyword2, appIdea, subreddit, numResults, includeAllContext, language, onStep }),
-        ]);
-        onStep(
-          "render",
-          `Building reports from ${left.totalFound + right.totalFound} posts`,
-        );
-        if (left.lowData || right.lowData) {
-          toast({
-            title: "Limited Reddit data found",
-            description: "Results may be less accurate.",
-          });
-        }
-        const compare: ComparePayload = {
-          mode: "compare",
-          left: left.payload,
-          right: right.payload,
-        };
-        sessionStorage.setItem("redditlens_compare", JSON.stringify(compare));
-        saveToHistory(left.payload);
-        saveToHistory(right.payload);
-        if (user) {
-          dbSaveSearch(user.id, left.payload).catch(() => {});
-          dbSaveSearch(user.id, right.payload).catch(() => {});
-        }
-        setActiveStep("done");
-        incrementDailySearchCount();
-        navigate("/compare");
-      } else {
-        const result = await runOneSearch({
-          keyword,
-          appIdea,
-          subreddit,
-          numResults,
-          includeAllContext,
-          language,
-          onStep,
-        });
-        onStep("render", `Building report from ${result.totalFound} posts`);
-        if (result.lowData) {
-          toast({
-            title: "Limited Reddit data found",
-            description: `Only ${result.totalFound} relevant Reddit results — analysis may be less accurate.`,
-          });
-        }
-        sessionStorage.setItem("redditlens_results", JSON.stringify(result.payload));
-        saveToHistory(result.payload);
-        if (user) {
-          dbSaveSearch(user.id, result.payload).catch(() => {});
-        }
-        setActiveStep("done");
-        incrementDailySearchCount();
-        navigate("/results");
-      }
-    } catch (e) {
-      console.error(e);
-      const stage = (e as any)?._stage ?? (validateMode ? "validate" : "unknown");
-      const friendly = toFriendlyError(e, stage);
-      toast({
-        title: friendly.title,
-        description: friendly.hint
-          ? `${friendly.description} ${friendly.hint}`
-          : friendly.description,
-        variant: "destructive",
-        action: (friendly as any).stage === "rate_limit" ? (
-          <ToastAction
-            altText="Upgrade"
-            onClick={() => navigate("/pricing")}
-          >
-            Upgrade
-          </ToastAction>
-        ) : friendly.retryable ? (
-          <ToastAction
-            altText="Retry"
-            onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
-          >
-            Retry
-          </ToastAction>
-        ) : undefined,
       });
-      setLoading(false);
-    }
   };
 
   return (

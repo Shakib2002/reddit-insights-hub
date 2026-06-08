@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Footer } from "./components/Footer";
+import { AnalysisProgressBar } from "@/components/AnalysisProgressBar";
 
 // Lazy-load route pages for code splitting (~746KB → split into chunks)
 const Index = lazy(() => import("./pages/Index"));
@@ -69,6 +70,7 @@ const App = () => (
               </Suspense>
             </div>
             <Footer />
+            <AnalysisProgressBar />
           </div>
         </AuthProvider>
       </BrowserRouter>
