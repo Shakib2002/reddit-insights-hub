@@ -17,7 +17,7 @@ export function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-device-fp",
     "Vary": "Origin",
   };
 }
@@ -150,10 +150,29 @@ export async function verifyAuth(
 
 const FREE_MONTHLY_LIMIT = 3;
 
+const rateLimitResponse = (corsHeaders: Record<string, string>, monthStart: string) =>
+  new Response(
+    JSON.stringify({
+      error: "Monthly search limit reached (3/month on free plan). Upgrade for unlimited searches.",
+      code: "RATE_LIMITED",
+      limit: FREE_MONTHLY_LIMIT,
+      resetAt: monthStart,
+    }),
+    {
+      status: 429,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+        "Retry-After": "86400",
+      },
+    },
+  );
+
 /**
  * Server-side rate limiting for free users.
- * Checks the rate_limits table and returns an error Response if limit exceeded.
- * Automatically records usage on success.
+ * Uses DUAL-KEY enforcement: checks both user_id AND IP separately.
+ * Even if a user creates a new account, the same IP/device is still blocked.
+ * Also accepts x-device-fp header for browser fingerprint tracking.
  * Paid users always pass.
  */
 export async function checkRateLimit(
@@ -166,7 +185,16 @@ export async function checkRateLimit(
   if (auth.tier !== "free") return null;
 
   const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const key = auth.userId ?? `ip:${clientIp}`;
+  const deviceFp = req.headers.get("x-device-fp")?.trim();
+
+  // Build all keys to check — ANY key exceeding limit = blocked
+  const keys: string[] = [];
+  if (auth.userId) keys.push(auth.userId);
+  if (clientIp !== "unknown") keys.push(`ip:${clientIp}`);
+  if (deviceFp && deviceFp.length > 8) keys.push(`fp:${deviceFp}`);
+  // Fallback: if no keys at all, use IP
+  if (keys.length === 0) keys.push(`ip:unknown`);
+
   // First day of current month
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01T00:00:00Z`;
@@ -174,41 +202,28 @@ export async function checkRateLimit(
   try {
     const supabase = createSupabaseAdmin();
 
-    // Count this month's requests for this key
-    const { count, error: countError } = await supabase
-      .from("rate_limits")
-      .select("*", { count: "exact", head: true })
-      .eq("key", key)
-      .eq("endpoint", endpoint)
-      .gte("created_at", monthStart);
+    // Check ALL keys — if ANY key has hit the limit, block
+    for (const key of keys) {
+      const { count, error: countError } = await supabase
+        .from("rate_limits")
+        .select("*", { count: "exact", head: true })
+        .eq("key", key)
+        .eq("endpoint", endpoint)
+        .gte("created_at", monthStart);
 
-    if (countError) {
-      console.error("Rate limit check failed:", countError);
-      // Fail open — don't block users if rate limiting table is down
-      return null;
+      if (countError) {
+        console.error("Rate limit check failed:", countError);
+        continue; // Skip this key, check others
+      }
+
+      if ((count ?? 0) >= FREE_MONTHLY_LIMIT) {
+        return rateLimitResponse(corsHeaders, monthStart);
+      }
     }
 
-    if ((count ?? 0) >= FREE_MONTHLY_LIMIT) {
-      return new Response(
-        JSON.stringify({
-          error: "Monthly search limit reached (3/month on free plan). Upgrade for unlimited searches.",
-          code: "RATE_LIMITED",
-          limit: FREE_MONTHLY_LIMIT,
-          resetAt: monthStart,
-        }),
-        {
-          status: 429,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-            "Retry-After": "86400",
-          },
-        },
-      );
-    }
-
-    // Record this usage
-    await supabase.from("rate_limits").insert({ key, endpoint });
+    // Record usage under ALL keys so switching accounts doesn't help
+    const inserts = keys.map((key) => ({ key, endpoint }));
+    await supabase.from("rate_limits").insert(inserts);
     return null;
   } catch (e) {
     console.error("Rate limit error:", e);
