@@ -1,5 +1,6 @@
 import logoUrl from "@/assets/redditlens-logo.svg";
 import { Heart, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const Footer = () => {
   const year = new Date().getFullYear();
@@ -24,6 +25,17 @@ export const Footer = () => {
                 © {year} RedditLens · All rights reserved
               </span>
             </div>
+          </div>
+
+          {/* Legal Links */}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
+              Privacy Policy
+            </Link>
+            <span className="text-border">·</span>
+            <Link to="/terms" className="hover:text-foreground transition-colors">
+              Terms & Conditions
+            </Link>
           </div>
 
           {/* Attribution */}
