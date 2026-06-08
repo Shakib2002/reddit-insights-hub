@@ -852,31 +852,43 @@ const Index = () => {
                 <Label className="text-sm">Report language</Label>
                 <div className="flex flex-wrap gap-2">
                   {([
-                    "English", "বাংলা", "हिन्दी", "Español", "Français",
-                    "Deutsch", "Português", "العربية", "中文", "日本語",
-                    "한국어", "Русский", "Türkçe", "Italiano", "Nederlands",
+                    { value: "English", label: "English" },
+                    { value: "Bangla", label: "বাংলা" },
+                    { value: "Hindi", label: "हिन्दी" },
+                    { value: "Spanish", label: "Español" },
+                    { value: "French", label: "Français" },
+                    { value: "German", label: "Deutsch" },
+                    { value: "Portuguese", label: "Português" },
+                    { value: "Arabic", label: "العربية" },
+                    { value: "Chinese", label: "中文" },
+                    { value: "Japanese", label: "日本語" },
+                    { value: "Korean", label: "한국어" },
+                    { value: "Russian", label: "Русский" },
+                    { value: "Turkish", label: "Türkçe" },
+                    { value: "Italian", label: "Italiano" },
+                    { value: "Dutch", label: "Nederlands" },
                   ]).map((lang) => (
                     <button
-                      key={lang}
+                      key={lang.value}
                       type="button"
-                      onClick={() => setLanguage(lang)}
+                      onClick={() => setLanguage(lang.value)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                        language === lang
+                        language === lang.value
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-secondary text-secondary-foreground border-border hover:bg-accent hover:text-accent-foreground"
                       }`}
                     >
-                      {lang}
+                      {lang.label}
                     </button>
                   ))}
                 </div>
                 <Input
                   type="text"
-                  placeholder="Or type any language..."
+                  placeholder="Or type any language (e.g. Thai, Vietnamese)..."
                   value={![
-                    "English", "বাংলা", "हिन्दी", "Español", "Français",
-                    "Deutsch", "Português", "العربية", "中文", "日本語",
-                    "한국어", "Русский", "Türkçe", "Italiano", "Nederlands",
+                    "English", "Bangla", "Hindi", "Spanish", "French",
+                    "German", "Portuguese", "Arabic", "Chinese", "Japanese",
+                    "Korean", "Russian", "Turkish", "Italian", "Dutch",
                   ].includes(language) ? language : ""}
                   onChange={(e) => setLanguage(e.target.value || "English")}
                   className="mt-2 h-8 text-sm"
