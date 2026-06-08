@@ -43,27 +43,40 @@ export function extractJson(text: string): any {
   // Attempt 1: direct parse
   try { return JSON.parse(jsonStr); } catch { /* continue to repair */ }
 
-  // Attempt 2: fix common AI model JSON issues
-  jsonStr = jsonStr
+  // Attempt 2: basic cleanup
+  let cleaned = jsonStr
     // Remove trailing commas before } or ]
     .replace(/,\s*([}\]])/g, "$1")
-    // Fix unescaped newlines inside string values
-    .replace(/(?<=:\s*"[^"]*)\n/g, "\\n")
-    // Remove control characters except \n \r \t
+    // Remove control characters (keep printable + unicode)
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "")
-    // Fix single quotes used instead of double quotes for keys
-    .replace(/(?<=[\{,]\s*)'([^']+)'\s*:/g, '"$1":');
+    // Replace literal newlines/tabs inside the string with escaped versions
+    .replace(/\t/g, "\\t");
 
-  try { return JSON.parse(jsonStr); } catch { /* continue */ }
+  // Replace unescaped newlines inside JSON string values
+  // Walk through and only escape newlines that are inside quotes
+  let inString = false;
+  let escaped = false;
+  let result = "";
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (escaped) { result += ch; escaped = false; continue; }
+    if (ch === "\\") { result += ch; escaped = true; continue; }
+    if (ch === '"') { result += ch; inString = !inString; continue; }
+    if (inString && ch === "\n") { result += "\\n"; continue; }
+    if (inString && ch === "\r") { result += "\\r"; continue; }
+    result += ch;
+  }
 
-  // Attempt 3: aggressive bracket balancing — find the largest parseable substring
+  try { return JSON.parse(result); } catch { /* continue */ }
+
+  // Attempt 3: bracket-balanced substring
   let depth = 0, bestEnd = -1;
-  for (let i = 0; i < jsonStr.length; i++) {
-    if (jsonStr[i] === "{") depth++;
-    else if (jsonStr[i] === "}") { depth--; if (depth === 0) { bestEnd = i; break; } }
+  for (let i = 0; i < result.length; i++) {
+    if (result[i] === "{") depth++;
+    else if (result[i] === "}") { depth--; if (depth === 0) { bestEnd = i; break; } }
   }
   if (bestEnd > 0) {
-    try { return JSON.parse(jsonStr.slice(0, bestEnd + 1)); } catch { /* give up */ }
+    try { return JSON.parse(result.slice(0, bestEnd + 1)); } catch { /* give up */ }
   }
 
   throw new Error("Failed to parse JSON from model output");
