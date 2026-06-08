@@ -841,13 +841,13 @@ const Index = () => {
                       <Slider
                         id="numResults"
                         min={5}
-                        max={30}
+                        max={10}
                         step={1}
                         value={[numResults]}
                         onValueChange={(v) => setNumResults(v[0])}
                       />
                       <p className="text-xs text-muted-foreground">
-                        More results = richer analysis but slower.
+                        More results = richer analysis but slightly slower.
                       </p>
                     </div>
 
