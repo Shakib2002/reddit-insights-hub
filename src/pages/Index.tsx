@@ -173,6 +173,7 @@ async function runOneSearch(opts: {
     },
   );
   if (analyzeErr) {
+    console.error("analyze error full:", analyzeErr, "context:", (analyzeErr as any).context);
     const msg = (analyzeErr as any).context?.body
       ? (() => { try { return JSON.parse((analyzeErr as any).context.body).error; } catch { return analyzeErr.message; } })()
       : analyzeErr.message;
