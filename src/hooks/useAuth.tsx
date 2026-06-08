@@ -21,14 +21,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if URL has OAuth callback tokens (Google redirect)
+    const hasAuthTokensInHash = window.location.hash.includes("access_token");
+
     // CRITICAL: subscribe BEFORE getSession to avoid race
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setLoading(false);
     });
+
+    // Only set loading=false from getSession if NOT processing OAuth callback
+    // During OAuth callback, onAuthStateChange will fire with the real session
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
+      if (!hasAuthTokensInHash) {
+        setSession(data.session);
+        setLoading(false);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
