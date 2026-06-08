@@ -63,11 +63,9 @@ const Auth = () => {
 
     if (!errorCode) return;
 
-    // DEBUG: Show raw error for troubleshooting
-    console.error("OAuth error:", errorCode, errorDesc);
     toast({
-      title: `OAuth Error: ${errorCode}`,
-      description: errorDesc || "No description provided",
+      title: "Google sign-in didn't complete",
+      description: friendlyOAuthError(errorCode, errorDesc),
       variant: "destructive",
     });
 
