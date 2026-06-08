@@ -1,15 +1,13 @@
-import { getCorsHeaders, extractJson, errorResponse, verifyAuth, checkRateLimit, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
+import { getCorsHeaders, extractJson, errorResponse, verifyAuth, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth + rate limiting
+    // Auth (rate limiting is handled by reddit-fetch)
     const authResult = await verifyAuth(req, corsHeaders);
     if ("error" in authResult) return authResult.error;
-    const rateLimited = await checkRateLimit(req, corsHeaders, authResult.auth, "feed");
-    if (rateLimited) return rateLimited;
 
     const API_KEY = Deno.env.get("FIREWORKS_API_KEY");
     if (!API_KEY) throw new Error("FIREWORKS_API_KEY not configured");

@@ -1,4 +1,4 @@
-import { getCorsHeaders, extractJson, errorResponse, verifyAuth, checkRateLimit, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
+import { getCorsHeaders, extractJson, errorResponse, verifyAuth, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
 
 function clampPct(n: any): number {
   const v = Number(n) || 0;
@@ -10,11 +10,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth + rate limiting
+    // Auth (rate limiting is handled by reddit-fetch)
     const authResult = await verifyAuth(req, corsHeaders);
     if ("error" in authResult) return authResult.error;
-    const rateLimited = await checkRateLimit(req, corsHeaders, authResult.auth, "fit");
-    if (rateLimited) return rateLimited;
 
     const body = await req.json().catch(() => ({}));
     const background = String(body?.background ?? "").trim().slice(0, 60);

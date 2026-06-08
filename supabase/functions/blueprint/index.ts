@@ -1,4 +1,4 @@
-import { getCorsHeaders, extractJson, errorResponse, verifyAuth, checkRateLimit, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
+import { getCorsHeaders, extractJson, errorResponse, verifyAuth, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
 
 const SYSTEM = "You are a startup advisor and product architect.";
 
@@ -7,11 +7,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth + rate limiting (blueprint is a Pro feature)
+    // Auth (rate limiting is handled by reddit-fetch)
     const authResult = await verifyAuth(req, corsHeaders);
     if ("error" in authResult) return authResult.error;
-    const rateLimited = await checkRateLimit(req, corsHeaders, authResult.auth, "blueprint");
-    if (rateLimited) return rateLimited;
 
     const { appName, appDescription, painPoints = [], language = "en" } = await req.json();
     if (!appName || typeof appName !== "string") {

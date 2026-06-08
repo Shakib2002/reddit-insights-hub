@@ -1,4 +1,4 @@
-import { getCorsHeaders, extractJson, errorResponse, verifyAuth, checkRateLimit, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
+import { getCorsHeaders, extractJson, errorResponse, verifyAuth, AI_GATEWAY_URL, MODEL } from "../_shared/cors.ts";
 
 const SYSTEM = `You are a brutal but fair startup validator. You have seen thousands of startup ideas fail and succeed. Your job is to validate app ideas against real Reddit data — not hype, not assumptions, only evidence.
 
@@ -69,11 +69,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth + rate limiting
+    // Auth (rate limiting is handled by reddit-fetch)
     const authResult = await verifyAuth(req, corsHeaders);
     if ("error" in authResult) return authResult.error;
-    const rateLimited = await checkRateLimit(req, corsHeaders, authResult.auth, "validate");
-    if (rateLimited) return rateLimited;
 
     const body = await req.json();
     const { keyword: rawKeyword, appIdea: rawAppIdea, results = [], language = "en" } = body;

@@ -1,4 +1,4 @@
-import { getCorsHeaders, extractJson, errorResponse, verifyAuth, checkRateLimit } from "../_shared/cors.ts";
+import { getCorsHeaders, extractJson, errorResponse, verifyAuth } from "../_shared/cors.ts";
 
 const SYSTEM = `You are a world-class product researcher who specializes in finding validated startup opportunities from Reddit discussions.
 
@@ -150,11 +150,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth + rate limiting
+    // Auth (rate limiting is handled by reddit-fetch, the entry point)
     const authResult = await verifyAuth(req, corsHeaders);
     if ("error" in authResult) return authResult.error;
-    const rateLimited = await checkRateLimit(req, corsHeaders, authResult.auth, "analyze");
-    if (rateLimited) return rateLimited;
 
     const body = await req.json().catch(() => ({}));
     const { results = [], keyword: rawKeyword, appIdea: rawAppIdea, language = "en" } = body ?? {};
