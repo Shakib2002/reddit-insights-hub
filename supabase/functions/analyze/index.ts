@@ -15,6 +15,7 @@ Rules:
 - Ignore generic complaints with no actionable solution
 - Be specific: 'Notion is too complex for simple task lists' not 'apps are bad'
 - Always return valid JSON only — no markdown, no explanation, no code fences
+- CRITICAL: Do NOT output any reasoning, thinking process, or <think> tags. Start your response directly with the opening curly brace '{' and end with the closing curly brace '}'.
 - CRITICAL JSON SAFETY: All JSON keys must be in English. When writing non-English text in string values, NEVER use unescaped double quotes — use single quotes or unicode escapes instead. Ensure all string values are properly escaped for JSON.`;
 
 const AI_GATEWAY_URL = "https://api.fireworks.ai/inference/v1/chat/completions";
@@ -298,6 +299,7 @@ Rules:
         model: MODEL,
         max_tokens: 4096,
         temperature: 0.3,
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userPrompt },
