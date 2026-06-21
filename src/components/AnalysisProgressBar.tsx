@@ -24,21 +24,22 @@ export function AnalysisProgressBar() {
     return subscribeAnalysis(() => setState({ ...getAnalysisState() }));
   }, []);
 
-  // Don't show if idle
-  if (state.status === "idle") return null;
-
-  const config = statusConfig[state.status];
-  const Icon = config.icon;
-  const isRunning = ["fetching", "analyzing", "saving"].includes(state.status);
   const isDone = state.status === "done";
 
-  // Auto-hide after 8 seconds on done
+  // Auto-hide after 8 seconds on done — MUST be before any conditional return
   useEffect(() => {
     if (isDone) {
       const t = setTimeout(() => setState({ status: "idle", keyword: "" }), 8000);
       return () => clearTimeout(t);
     }
   }, [isDone]);
+
+  // Don't render if idle
+  if (state.status === "idle") return null;
+
+  const config = statusConfig[state.status];
+  const Icon = config.icon;
+  const isRunning = ["fetching", "analyzing", "saving"].includes(state.status);
 
   return (
     <div className="fixed bottom-4 right-4 z-[9999] animate-in slide-in-from-bottom-4 duration-300">
