@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { toFriendlyError } from "@/lib/errors";
+import { toFriendlyError, extractEdgeFunctionErrorAsync } from "@/lib/errors";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Search, ChevronDown, GitCompare, X, ShieldCheck } from "lucide-react";
@@ -154,15 +154,7 @@ async function runOneSearch(opts: {
   );
   if (redditErr) {
     console.error("reddit-fetch error:", redditErr, "context:", (redditErr as any).context);
-    // Extract the actual error message from edge function response
-    let msg = (redditErr as any).message ?? "Reddit fetch failed";
-    try {
-      const body = (redditErr as any).context?.body;
-      if (body) {
-        const parsed = typeof body === "string" ? JSON.parse(body) : body;
-        msg = parsed?.error || msg;
-      }
-    } catch { /* use default msg */ }
+    const msg = await extractEdgeFunctionErrorAsync(redditErr);
     const err = new Error(msg);
     (err as any)._stage = "reddit";
     throw err;
@@ -186,9 +178,7 @@ async function runOneSearch(opts: {
   );
   if (analyzeErr) {
     console.error("analyze error full:", analyzeErr, "context:", (analyzeErr as any).context);
-    const msg = (analyzeErr as any).context?.body
-      ? (() => { try { return JSON.parse((analyzeErr as any).context.body).error; } catch { return analyzeErr.message; } })()
-      : analyzeErr.message;
+    const msg = await extractEdgeFunctionErrorAsync(analyzeErr);
     const err = new Error(msg);
     (err as any)._stage = "ai";
     throw err;
@@ -236,7 +226,8 @@ async function runValidate(opts: {
     },
   );
   if (redditErr) {
-    const err = new Error((redditErr as any).message ?? "Reddit fetch failed");
+    const msg = await extractEdgeFunctionErrorAsync(redditErr);
+    const err = new Error(msg);
     (err as any)._stage = "reddit";
     throw err;
   }
@@ -257,9 +248,7 @@ async function runValidate(opts: {
     },
   );
   if (validateErr) {
-    const msg = (validateErr as any).context?.body
-      ? (() => { try { return JSON.parse((validateErr as any).context.body).error; } catch { return validateErr.message; } })()
-      : validateErr.message;
+    const msg = await extractEdgeFunctionErrorAsync(validateErr);
     const err = new Error(msg);
     (err as any)._stage = "validate";
     throw err;

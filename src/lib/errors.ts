@@ -153,3 +153,55 @@ export function toFriendlyError(
 export function extractEdgeFunctionError(error: unknown): string {
   return pickMessage(error) || "An unexpected error occurred.";
 }
+
+/**
+ * Extract a user-facing error message from a Supabase edge function error asynchronously.
+ * Properly handles context being a Response object or context.body being a Blob or string.
+ */
+export async function extractEdgeFunctionErrorAsync(error: unknown): Promise<string> {
+  if (!error) return "An unexpected error occurred.";
+  if (typeof error === "string") return error;
+
+  const anyE = error as any;
+
+  // Handle standard Response object
+  if (anyE.context instanceof Response) {
+    try {
+      const text = await anyE.context.clone().text();
+      const parsed = JSON.parse(text);
+      return parsed?.error || parsed?.message || anyE.message || text;
+    } catch {
+      try {
+        const text = await anyE.context.text();
+        return text || anyE.message;
+      } catch {
+        return anyE.message;
+      }
+    }
+  }
+
+  // Handle context.body (which might be a Blob or string)
+  if (anyE?.context?.body) {
+    const body = anyE.context.body;
+    try {
+      let text = "";
+      if (typeof body === "string") {
+        text = body;
+      } else if (body instanceof Blob) {
+        text = await body.text();
+      } else if (typeof body.text === "function") {
+        text = await body.text();
+      } else {
+        text = String(body);
+      }
+
+      const parsed = JSON.parse(text);
+      return parsed?.error || parsed?.message || anyE.message || text;
+    } catch {
+      return anyE.message ?? String(anyE);
+    }
+  }
+
+  return anyE?.message ?? String(anyE);
+}
+

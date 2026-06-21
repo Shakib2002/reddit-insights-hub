@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { toFriendlyError } from "@/lib/errors";
+import { toFriendlyError, extractEdgeFunctionErrorAsync } from "@/lib/errors";
 import {
   ArrowLeft,
   Copy,
@@ -449,7 +449,12 @@ const Results = () => {
           },
         },
       );
-      if (redditErr) throw redditErr;
+      if (redditErr) {
+        const msg = await extractEdgeFunctionErrorAsync(redditErr);
+        const err = new Error(msg);
+        (err as any)._stage = "reddit";
+        throw err;
+      }
 
       const fresh: RedditPost[] = redditData?.results ?? [];
       const existing: RedditPost[] = inputs.redditPosts ?? [];
@@ -482,10 +487,10 @@ const Results = () => {
         },
       );
       if (analyzeErr) {
-        const msg = (analyzeErr as any).context?.body
-          ? JSON.parse((analyzeErr as any).context.body).error
-          : analyzeErr.message;
-        throw new Error(msg);
+        const msg = await extractEdgeFunctionErrorAsync(analyzeErr);
+        const err = new Error(msg);
+        (err as any)._stage = "ai";
+        throw err;
       }
 
       // Recompute effective subreddits + avg score from merged set
@@ -541,7 +546,8 @@ const Results = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       console.error(e);
-      const friendly = toFriendlyError(e, "ai");
+      const stage = (e as any)?._stage ?? "ai";
+      const friendly = toFriendlyError(e, stage);
       toast({
         title: friendly.title,
         description: friendly.hint

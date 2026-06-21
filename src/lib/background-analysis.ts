@@ -9,6 +9,7 @@ import type { ResultsPayload, ComparePayload } from "@/lib/types";
 import { saveToHistory, saveValidationToHistory } from "@/lib/history";
 import { dbSaveSearch, dbSaveValidation } from "@/lib/db-history";
 import { incrementDailySearchCount } from "@/lib/usage";
+import { extractEdgeFunctionErrorAsync } from "@/lib/errors";
 
 export type AnalysisStatus = "idle" | "fetching" | "analyzing" | "saving" | "done" | "error";
 
@@ -125,14 +126,7 @@ async function runSingleBackground(opts: any) {
   });
 
   if (redditErr) {
-    let msg = (redditErr as any).message ?? "Reddit fetch failed";
-    try {
-      const body = (redditErr as any).context?.body;
-      if (body) {
-        const parsed = typeof body === "string" ? JSON.parse(body) : body;
-        msg = parsed?.error || msg;
-      }
-    } catch {}
+    const msg = await extractEdgeFunctionErrorAsync(redditErr);
     const err = new Error(msg);
     (err as any)._stage = "reddit";
     throw err;
@@ -154,11 +148,7 @@ async function runSingleBackground(opts: any) {
   });
 
   if (analyzeErr) {
-    let msg = analyzeErr.message;
-    try {
-      const body = (analyzeErr as any).context?.body;
-      if (body) msg = JSON.parse(body).error || msg;
-    } catch {}
+    const msg = await extractEdgeFunctionErrorAsync(analyzeErr);
     const err = new Error(msg);
     (err as any)._stage = "ai";
     throw err;
@@ -208,11 +198,7 @@ async function runValidateBackground(opts: any) {
   });
 
   if (redditErr) {
-    let msg = (redditErr as any).message ?? "Reddit fetch failed";
-    try {
-      const body = (redditErr as any).context?.body;
-      if (body) msg = (typeof body === "string" ? JSON.parse(body) : body)?.error || msg;
-    } catch {}
+    const msg = await extractEdgeFunctionErrorAsync(redditErr);
     const err = new Error(msg);
     (err as any)._stage = "reddit";
     throw err;
@@ -233,11 +219,7 @@ async function runValidateBackground(opts: any) {
   });
 
   if (analyzeErr) {
-    let msg = analyzeErr.message;
-    try {
-      const body = (analyzeErr as any).context?.body;
-      if (body) msg = JSON.parse(body).error || msg;
-    } catch {}
+    const msg = await extractEdgeFunctionErrorAsync(analyzeErr);
     const err = new Error(msg);
     (err as any)._stage = "ai";
     throw err;
@@ -286,7 +268,8 @@ async function runCompareBackground(opts: any) {
 
   for (const { error } of fetchBoth) {
     if (error) {
-      const err = new Error((error as any).message ?? "Reddit fetch failed");
+      const msg = await extractEdgeFunctionErrorAsync(error);
+      const err = new Error(msg);
       (err as any)._stage = "reddit";
       throw err;
     }
@@ -307,7 +290,8 @@ async function runCompareBackground(opts: any) {
 
   for (const { error } of analyzeBoth) {
     if (error) {
-      const err = new Error((error as any).message ?? "AI analysis failed");
+      const msg = await extractEdgeFunctionErrorAsync(error);
+      const err = new Error(msg);
       (err as any)._stage = "ai";
       throw err;
     }
