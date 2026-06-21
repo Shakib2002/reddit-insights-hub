@@ -37,6 +37,7 @@ import { decodeShare, encodeShare } from "@/lib/share";
 import { saveToHistory } from "@/lib/history";
 import { downloadFile, reportToCsv, reportToMarkdown, safeFilename } from "@/lib/exporters";
 import { BlueprintDialog } from "@/components/BlueprintDialog";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { LoadingSteps, type LoadingStep } from "@/components/LoadingSteps";
 import { SectionNav } from "@/components/SectionNav";
 import { BuildOrSkipVerdict } from "@/components/results/BuildOrSkipVerdict";
@@ -315,6 +316,7 @@ const Results = () => {
   const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   const [blueprintFor, setBlueprintFor] = useState<{ name: string; description: string } | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   useEffect(() => {
     const shared = searchParams.get("data");
@@ -548,6 +550,10 @@ const Results = () => {
       console.error(e);
       const stage = (e as any)?._stage ?? "ai";
       const friendly = toFriendlyError(e, stage);
+      if (friendly.stage === ("rate_limit" as any) || (friendly as any).stage === "rate_limit") {
+        setShowUpgrade(true);
+        return;
+      }
       toast({
         title: friendly.title,
         description: friendly.hint
@@ -1391,6 +1397,11 @@ ${analysis.recommendedSubreddits.map((s) => `r/${s}`).join(", ")}
           language={inputs.language ?? "en"}
         />
       )}
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        reason="limit"
+      />
     </div>
   );
 };

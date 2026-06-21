@@ -374,17 +374,18 @@ const Index = () => {
       console.error(e);
       const stage = (e as any)?._stage as any;
       const friendly = toFriendlyError(e, stage);
+      if (friendly.stage === ("rate_limit" as any) || (friendly as any).stage === "rate_limit") {
+        setShowUpgrade(true);
+        setLoading(false);
+        return;
+      }
       toast({
         title: friendly.title,
         description: friendly.hint
           ? `${friendly.description} ${friendly.hint}`
           : friendly.description,
         variant: "destructive",
-        action: (friendly as any).stage === "rate_limit" ? (
-          <ToastAction altText="Upgrade" onClick={() => navigate("/pricing")}>
-            Upgrade
-          </ToastAction>
-        ) : friendly.retryable ? (
+        action: friendly.retryable ? (
           <ToastAction altText="Retry" onClick={() => runQuickSearch(topic)}>
             Retry
           </ToastAction>
@@ -473,20 +474,18 @@ const Index = () => {
         try {
           const stage = (e as any)?._stage ?? (validateMode ? "validate" : "unknown");
           const friendly = toFriendlyError(e, stage);
+          if (friendly.stage === ("rate_limit" as any) || (friendly as any).stage === "rate_limit") {
+            setShowUpgrade(true);
+            setLoading(false);
+            return;
+          }
           toast({
             title: friendly.title,
             description: friendly.hint
               ? `${friendly.description} ${friendly.hint}`
               : friendly.description,
             variant: "destructive",
-            action: (friendly as any).stage === "rate_limit" ? (
-              <ToastAction
-                altText="Upgrade"
-                onClick={() => navigate("/pricing")}
-              >
-                Upgrade
-              </ToastAction>
-            ) : friendly.retryable ? (
+            action: friendly.retryable ? (
               <ToastAction
                 altText="Retry"
                 onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
